@@ -210,3 +210,58 @@ async def test_serial_bridge_demo_mode_fail_closed(client: AsyncClient, admin_he
     assert res_demo["status"] == "RECORDED"
     assert res_demo["data"]["candidate_id"] == "C001"
     assert res_demo["data"]["sequence_number"] == 1
+
+
+@pytest.mark.asyncio
+async def test_serial_bridge_fragmented_ndjson_chunks(client: AsyncClient, admin_headers: dict):
+    """
+    Test Phase 6X: Serial bridge robust line-buffering against fragmented UART reads,
+    multiple NDJSON lines in a single chunk, and malformed input resilience.
+    """
+    election_id = "EV-2026-FRAG"
+    token_str = admin_headers["Authorization"].split()[1]
+
+    bridge = SerialBridge(
+        backend_url="http://test",
+        election_id=election_id,
+        admin_token=token_str,
+        client=client,
+    )
+
+    # 1. Fragmented message across two chunks
+    chunk1 = '{"type":"BOOT","device_id":"EVM-001",'
+    chunk2 = '"sequence_number":0,"config_hash":"34d70b"}\n'
+
+    res1 = await bridge.process_chunk(chunk1)
+    assert res1 == [], "Incomplete fragment should be buffered without emitting a message"
+    assert bridge._buffer == chunk1
+
+    res2 = await bridge.process_chunk(chunk2)
+    assert len(res2) == 1
+    assert res2[0]["status"] == "ACK"
+    assert res2[0]["type"] == "BOOT"
+    assert bridge._buffer == ""
+
+    # 2. Multi-line chunk with trailing incomplete fragment
+    chunk3 = (
+        '{"type":"STATE_CHANGE","device_id":"EVM-001","sequence_number":0,"from_state":"BOOT","to_state":"READY"}\n'
+        '{"type":"HEARTBE'
+    )
+    res3 = await bridge.process_chunk(chunk3)
+    assert len(res3) == 1
+    assert res3[0]["status"] == "ACK"
+    assert res3[0]["transition"] == "BOOT->READY"
+    assert bridge._buffer == '{"type":"HEARTBE'
+
+    chunk4 = 'AT","device_id":"EVM-001","sequence_number":0,"state":"READY"}\n'
+    res4 = await bridge.process_chunk(chunk4)
+    assert len(res4) == 1
+    assert res4[0]["status"] == "ACK"
+    assert res4[0]["heartbeat"] is True
+    assert bridge._buffer == ""
+
+    # 3. Malformed non-JSON chunk followed by newline handled gracefully without crash
+    chunk_garbage = 'THIS_IS_CORRUPTED_SERIAL_NOISE_12345\n'
+    res_garbage = await bridge.process_chunk(chunk_garbage)
+    assert res_garbage == [], "Malformed lines should be safely skipped without crashing"
+    assert bridge._buffer == ""

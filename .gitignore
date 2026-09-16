@@ -55,4 +55,5 @@ docker-compose.override.yml
 # Exports
 exports/
 export_*.json
+!docs/export_schema.json
 *.export.json

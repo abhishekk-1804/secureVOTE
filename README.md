@@ -1,6 +1,6 @@
 # SecureVOTE — Electronic Voting System Security Prototype
 
-An educational and research-oriented electronic voting security prototype demonstrating defense-in-depth, hardware tamper detection, immutable audit trails, asymmetric cryptographic signing, external ledger anchoring, independent offline verification, advisory anomaly detection, and keyed identity abstraction.
+An educational and research-oriented electronic voting security prototype demonstrating defense-in-depth, hardware tamper detection, tamper-evident audit trails, asymmetric cryptographic signing, external ledger anchoring, independent offline verification, advisory anomaly detection, and keyed identity abstraction.
 
 > [!NOTE]
 > **Research-Oriented Prototype Notice**: SecureVOTE is an educational and academic research prototype. It is **not** an election-ready, nationally deployable, or legally certified voting system. It illustrates how cryptographic verification, hardware state machines, and defense-in-depth principles can be realized on resource-constrained microcontrollers and audited independently.
@@ -29,7 +29,7 @@ An educational and research-oriented electronic voting security prototype demons
                                             | REST API / JSON
 +-------------------------------------------v-------------------------------------------+
 |  Backend (FastAPI, SQLAlchemy Async, SQLite / PostgreSQL)                             |
-|  - Cryptographic SHA-256 hash-chained immutable audit log                             |
+|  - Cryptographic SHA-256 hash-chained tamper-evident audit log                        |
 |  - Configuration freezing (pre-election candidate slate SHA-256 hash)                 |
 |  - Zero-drift reconciliation constraint: sum(candidates) == total == sum(devices)     |
 |  - Ed25519 asymmetric manifest signing (canonical JSON serialization)                 |
@@ -126,7 +126,7 @@ The firmware implements an explicit 12-state FSM with a formal transition valida
   - `AUDITOR`: Full audit trail inspection, cryptographic verifier execution, anomaly review.
   - `OBSERVER`: Read-only access to published election tallies and manifests.
 - **Tamper-Evident SHA-256 Audit Chain**:
-  Every system event generates an immutable log entry linked to its predecessor:
+  Every system event generates a tamper-evident log entry linked to its predecessor:
   $$\text{entry\_hash}_i = \text{SHA-256}(\text{previous\_hash} \parallel \text{election\_id} \parallel \text{event\_type} \parallel \text{event\_data} \parallel \text{timestamp})$$
 - **Zero-Drift Reconciliation Rule**:
   Strict invariant enforced across all tallies:
@@ -134,7 +134,7 @@ The firmware implements an explicit 12-state FSM with a formal transition valida
 - **Asymmetric Manifest Signing (Ed25519)**:
   Authoritative Result Manifests generated at `CLOSED`/`PUBLISHED` state are signed using Ed25519 over canonical JSON (`json.dumps(..., sort_keys=True, separators=(',', ':'))`).
 - **Audit-Root Anchoring Abstraction**:
-  Canonical Merkle root of all audit events is anchored to immutable targets:
+  Canonical Merkle root of all audit events is anchored to external or local targets:
   - `LOCAL ANCHOR`: In-memory reference commitment for deterministic testing.
   - `EXTERNAL ANCHOR`: Pluggable blockchain adapter (truthfully reports `NOT CONFIGURED` when external RPC endpoints are absent).
 - **Advisory Anomaly Detection Engine**:
@@ -229,7 +229,7 @@ python serial_bridge.py --port COM3 --baud 9600 --backend http://localhost:8000 
 ### 4. Independent Standalone Verifier CLI
 ```powershell
 # Export election archive from backend: GET /api/elections/{id}/export
-python backend/standalone_verifier/verifier.py --export election_export.json
+python backend/standalone_verifier/verifier.py election_export.json
 ```
 
 ---
@@ -238,12 +238,12 @@ python backend/standalone_verifier/verifier.py --export election_export.json
 
 All test suites execute deterministically without external network or service dependencies:
 
-### 1. Backend Pytest Suite (79 Tests)
+### 1. Backend Pytest Suite (80 Tests)
 ```powershell
 cd D:\secureVOTE\backend
 .\venv\Scripts\pytest.exe tests/ -v
 ```
-*Result*: **79 passed** (including integration, multi-device, RFID, signing, anchoring, anomaly, verifier, and attack tests).
+*Result*: **80 passed** (including integration, multi-device, RFID, signing, anchoring, anomaly, verifier, attack, and fragmented NDJSON tests).
 
 ### 2. Firmware Native Unit Tests (17 Tests)
 ```powershell

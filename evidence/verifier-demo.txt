@@ -1,0 +1,31 @@
+﻿{
+  "valid": true,
+  "checks": {
+    "export_envelope": true,
+    "configuration": true,
+    "ballot_hashes": true,
+    "ballot_sequence": true,
+    "candidate_totals": true,
+    "device_totals": true,
+    "reconciliation": true,
+    "audit_chain": true,
+    "audit_root": true,
+    "manifest": true,
+    "signature": true,
+    "anchor": true
+  },
+  "failures": [],
+  "details": [
+    "Export envelope hash verified.",
+    "Configuration hash verified."
+  ],
+  "summary": {
+    "election_id": "EV-2026-001",
+    "total_ballots_recounted": 1000,
+    "candidates_recounted": 4,
+    "devices_recounted": 4,
+    "audit_entries_recomputed": 2015,
+    "audit_root_hash": "a1c29635cfba4d88e8b53abf604cf27b83b42c289e2f9ec81dd8e47480a0ffa1",
+    "reconciliation_drift": 0
+  }
+}

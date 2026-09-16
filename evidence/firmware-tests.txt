@@ -1,0 +1,31 @@
+﻿Verbosity level can be increased via `-v, -vv, or -vvv` option
+Collected 1 tests
+
+Processing * in native environment
+--------------------------------------------------------------------------------
+Building...
+Testing...
+test\test_firmware.cpp:489: test_fsm_init_and_state_names	[PASSED]
+test\test_firmware.cpp:490: test_fsm_core_voting_lifecycle	[PASSED]
+test\test_firmware.cpp:491: test_fsm_rejected_invalid_transitions	[PASSED]
+test\test_firmware.cpp:492: test_fsm_tamper_entry_from_multiple_states	[PASSED]
+test\test_firmware.cpp:493: test_fsm_recovery_success	[PASSED]
+test\test_firmware.cpp:494: test_fsm_recovery_failure_reenters_error	[PASSED]
+test\test_firmware.cpp:495: test_voting_selection_and_confirm	[PASSED]
+test\test_firmware.cpp:496: test_voting_idle_timeout	[PASSED]
+test\test_firmware.cpp:497: test_auth_correct_pin	[PASSED]
+test\test_firmware.cpp:498: test_auth_incorrect_pin	[PASSED]
+test\test_firmware.cpp:499: test_storage_sequence_counter_persistence	[PASSED]
+test\test_firmware.cpp:500: test_storage_tamper_flag_and_config_hash	[PASSED]
+test\test_firmware.cpp:503: test_fsm_pause_and_unpause_flow	[PASSED]
+test\test_firmware.cpp:504: test_fsm_voting_in_flight_ballot_discard_on_pause	[PASSED]
+test\test_firmware.cpp:505: test_fsm_paused_rejects_voting_events	[PASSED]
+test\test_firmware.cpp:506: test_fsm_pause_flag_persists_across_restart	[PASSED]
+test\test_firmware.cpp:507: test_tamper_state_change_audit_regression	[PASSED]
+--------------------- native:* [PASSED] Took 1.23 seconds ---------------------
+
+=================================== SUMMARY ===================================
+Environment    Test    Status    Duration
+-------------  ------  --------  ------------
+native         *       PASSED    00:00:01.230
+================= 17 test cases: 17 succeeded in 00:00:01.230 =================

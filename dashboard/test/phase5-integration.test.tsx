@@ -102,7 +102,7 @@ describe("Phase 5 Dashboard Integration", () => {
       { id: "EV-2026-001", title: "General Election 2026", state: "CLOSED" },
     ]);
     (api.getAuditLog as any).mockResolvedValue([
-      { sequence_number: 1, event_type: "SYSTEM_INIT", previous_hash: null, entry_hash: "h1" },
+      { id: 1, sequence_number: 1, event_type: "SYSTEM_INIT", previous_hash: null, entry_hash: "h1" },
     ]);
     (api.verifyAuditChain as any).mockResolvedValue({
       is_intact: true,

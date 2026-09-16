@@ -54,11 +54,26 @@ class SerialBridge:
         self.admin_token = admin_token
         self.demo_mode = demo_mode
         self.http_client = client or httpx.AsyncClient(base_url=self.backend_url, timeout=10.0)
+        self._buffer: str = ""
 
     def _headers(self) -> dict[str, str]:
         if self.admin_token:
             return {"Authorization": f"Bearer {self.admin_token}"}
         return {}
+
+    async def process_chunk(self, chunk: str) -> list[dict[str, Any]]:
+        """
+        Buffer incoming streaming data chunks and process complete NDJSON lines.
+        Incomplete fragments remain in the buffer until a newline delimiter is received.
+        """
+        self._buffer += chunk
+        results = []
+        while "\n" in self._buffer:
+            line, self._buffer = self._buffer.split("\n", 1)
+            res = await self.process_raw_line(line)
+            if res is not None:
+                results.append(res)
+        return results
 
     async def process_raw_line(self, line: str) -> dict[str, Any] | None:
         """Parse and route a single raw JSON line from serial UART."""
@@ -175,16 +190,16 @@ class SerialBridge:
             time.sleep(2.0)  # Wait for Arduino auto-reset
             print("[BRIDGE] Connected. Listening for firmware UART messages...")
             while True:
-                line = ser.readline().decode("utf-8", errors="replace").strip()
-                if line:
-                    await self.process_raw_line(line)
+                chunk = ser.read(ser.in_waiting or 1).decode("utf-8", errors="replace")
+                if chunk:
+                    await self.process_chunk(chunk)
 
     async def run_replay_file(self, filename: str):
         print(f"[BRIDGE] Replaying serial captures from file: {filename}")
         with open(filename, "r", encoding="utf-8") as f:
             for line in f:
-                res = await self.process_raw_line(line)
-                if res:
+                results = await self.process_chunk(line)
+                for res in results:
                     print(f"       Result -> {res.get('status')}")
 
 

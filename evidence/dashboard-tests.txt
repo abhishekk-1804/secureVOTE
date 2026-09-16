@@ -1,0 +1,17 @@
+﻿
+> securevote-dashboard@0.1.0 test
+> vitest run --run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/secureVOTE/dashboard[39m
+
+ [32m✓[39m test/auth-flow.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[90m 70[2mms[22m[39m
+ [32m✓[39m test/device-status.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[90m 121[2mms[22m[39m
+ [32m✓[39m test/audit-explorer.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 316[2mms[22m[39m
+ [32m✓[39m test/results-view.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[90m 266[2mms[22m[39m
+ [32m✓[39m test/phase5-integration.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 362[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 22:30:18
+[2m   Duration [22m 9.28s[2m (transform 583ms, setup 1.82s, collect 18.61s, tests 1.14s, environment 10.87s, prepare 1.32s)[22m

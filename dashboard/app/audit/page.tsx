@@ -453,9 +453,10 @@ export default function AuditExplorerPage() {
               ) : (
                 filteredEntries.map((entry) => {
                   const isDemo = isDemoMode(entry);
+                  const rowKey = entry.id != null ? `audit-id-${entry.id}` : `audit-seq-${entry.sequence_number}-${entry.entry_hash || entry.timestamp}`;
                   return (
                     <tr
-                      key={entry.id}
+                      key={rowKey}
                       className="hover:bg-slate-800/40 transition-colors font-sans"
                     >
                       <td className="py-3 px-4 font-mono text-blue-400 font-medium">
