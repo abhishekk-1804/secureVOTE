@@ -7,6 +7,8 @@ import {
   AuditEntryResponse,
   DeviceResponse,
   HealthCheckResponse,
+  AdvisoryFinding,
+  RFIDTapResponse,
 } from "@/lib/types";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { AlertBanner } from "@/components/common/AlertBanner";
@@ -19,6 +21,10 @@ import {
   Cpu,
   Lock,
   ExternalLink,
+  Key,
+  Anchor,
+  Radio,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -79,6 +85,41 @@ const SECURITY_CONTROLS = [
     detection: "DEVICE REJECTED (HTTP 403) for unknown or revoked units",
     status: "ACTIVE",
   },
+  {
+    id: 9,
+    name: "Result Manifest Asymmetric Signing",
+    mechanism: "Ed25519 Elliptic Curve Signatures",
+    detection: "SIGNATURE_INVALID on tampered manifest or unauthorized key",
+    status: "ACTIVE",
+  },
+  {
+    id: 10,
+    name: "Audit-Root External Anchoring",
+    mechanism: "SHA-256 Root Hash External Proof Commitments",
+    detection: "ANCHOR_MISMATCH on historical tree divergence",
+    status: "ACTIVE",
+  },
+  {
+    id: 11,
+    name: "Zero-Knowledge Identity Abstraction",
+    mechanism: "Keyed HMAC-SHA256 Pseudonymization (Zero Raw UID Persistence)",
+    detection: "RFID AUTHENTICATION != VOTER ELIGIBILITY enforcement",
+    status: "ACTIVE",
+  },
+  {
+    id: 12,
+    name: "Advisory Anomaly Detection Engine",
+    mechanism: "6 Deterministic Rules (Rate bursts, sequence gaps, rejections)",
+    detection: "ADVISORY FINDING — REQUIRES HUMAN REVIEW (Non-blocking)",
+    status: "ACTIVE",
+  },
+  {
+    id: 13,
+    name: "Machine-Verifiable Independent Verification",
+    mechanism: "Pure Python Verifier with DB-Disconnected Proof",
+    detection: "Typed 12-point failure codes on any corrupted export data",
+    status: "ACTIVE",
+  },
 ];
 
 export default function SecurityCenterPage() {
@@ -86,6 +127,11 @@ export default function SecurityCenterPage() {
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
   const [devices, setDevices] = useState<DeviceResponse[]>([]);
   const [tamperEvents, setTamperEvents] = useState<AuditEntryResponse[]>([]);
+  const [anomalies, setAnomalies] = useState<AdvisoryFinding[]>([]);
+  const [rfidCard, setRfidCard] = useState<string>("CARD-VALID-01");
+  const [rfidDeviceId, setRfidDeviceId] = useState<string>("EVM-001");
+  const [rfidResult, setRfidResult] = useState<RFIDTapResponse | null>(null);
+  const [rfidLoading, setRfidLoading] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -106,10 +152,35 @@ export default function SecurityCenterPage() {
           (e.event_data && e.event_data.includes("SUSPENDED"))
       );
       setTamperEvents(tampers);
+
+      try {
+        const anoData = await api.getElectionAnomalies("EV-2026-001", token);
+        setAnomalies(anoData.findings || []);
+      } catch {
+        setAnomalies([]);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load security center metrics");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTapRFID = async (cardUidToTap?: string) => {
+    const card = cardUidToTap || rfidCard;
+    setRfidLoading(true);
+    setError(null);
+    try {
+      const res = await api.tapRFID({
+        raw_uid: card,
+        device_id: rfidDeviceId,
+        election_id: "EV-2026-001",
+      });
+      setRfidResult(res);
+    } catch (err: any) {
+      setError(err.message || "RFID tap simulation failed");
+    } finally {
+      setRfidLoading(false);
     }
   };
 
@@ -201,7 +272,9 @@ export default function SecurityCenterPage() {
             </span>
             <Lock className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-xl font-bold text-white">8 of 8 Active</div>
+          <div className="text-xl font-bold text-white">
+            {SECURITY_CONTROLS.length} of {SECURITY_CONTROLS.length} Active
+          </div>
           <p className="text-[11px] text-slate-500 mt-1">
             Full defense-in-depth matrix operational
           </p>
@@ -227,12 +300,16 @@ export default function SecurityCenterPage() {
                 className="bg-slate-950/80 border border-rose-800/60 rounded-lg p-3 flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <Cpu className="w-4 h-4 text-rose-400" />
+                  <div className="p-2 bg-rose-500/20 text-rose-400 rounded-lg">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
                   <div>
-                    <span className="font-mono font-bold text-white text-xs">
-                      {d.id}
+                    <span className="font-bold text-white text-sm">
+                      {d.name} ({d.id})
                     </span>
-                    <span className="text-xs text-slate-400 ml-2">({d.name})</span>
+                    <p className="text-xs text-rose-300/80">
+                      Enclosure latch trip recorded in EEPROM & backend audit chain
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -250,6 +327,179 @@ export default function SecurityCenterPage() {
           </div>
         </div>
       )}
+
+      {/* Phase 5: Advisory Anomaly Detection Panel */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Eye className="w-4 h-4 text-amber-400" />
+              Advisory Anomaly Detection Engine (6 Deterministic Rules)
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Heuristic rate bursts, sequence gaps, and tamper correlation monitoring
+            </p>
+          </div>
+
+          <span className="px-3 py-1 bg-amber-950/80 text-amber-400 border border-amber-800/80 rounded-full text-xs font-bold">
+            ADVISORY ONLY — REQUIRES HUMAN REVIEW
+          </span>
+        </div>
+
+        <div className="bg-amber-950/20 border border-amber-800/40 rounded-lg p-3 text-xs text-amber-200/90 flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold">Hard Architectural Boundary: </span>
+            Advisory findings are purely informational telemetry. They do <strong>NOT</strong> block or alter election lifecycle transitions, tally reconciliation, or Ed25519 digital signing.
+          </div>
+        </div>
+
+        {anomalies.length > 0 ? (
+          <div className="space-y-2">
+            {anomalies.map((ano) => (
+              <div
+                key={ano.finding_id}
+                className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-2"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        ano.severity === "HIGH"
+                          ? "bg-rose-950 text-rose-400 border border-rose-800"
+                          : ano.severity === "MEDIUM"
+                          ? "bg-amber-950 text-amber-400 border border-amber-800"
+                          : "bg-blue-950 text-blue-400 border border-blue-800"
+                      }`}
+                    >
+                      {ano.severity} SEVERITY
+                    </span>
+                    <span className="font-mono font-bold text-xs text-white">
+                      {ano.rule_id}
+                    </span>
+                    <span className="text-xs text-slate-400">({ano.category})</span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-mono">
+                    {new Date(ano.timestamp).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300">{ano.advisory_explanation}</p>
+                <details className="text-xs text-slate-400">
+                  <summary className="cursor-pointer hover:text-slate-200">View Evidence</summary>
+                  <pre className="mt-2 bg-slate-900 p-2.5 rounded border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto">
+                    {JSON.stringify(ano.evidence, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-lg p-4 text-center text-xs text-slate-400">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 mx-auto mb-1.5" />
+            No anomalous rate bursts, sequence gaps, or uncommanded device events detected in active election window.
+          </div>
+        )}
+      </div>
+
+      {/* Phase 5: RFID / Identity Abstraction Simulator */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Radio className="w-4 h-4 text-blue-400" />
+              RFID / Contactless Identity Abstraction Simulator
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Keyed HMAC-SHA256 pseudonymization with zero raw UID storage
+            </p>
+          </div>
+
+          <span className="px-3 py-1 bg-blue-950/80 text-blue-400 border border-blue-800/80 rounded-full text-xs font-bold">
+            RFID AUTHENTICATION != VOTER ELIGIBILITY
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              Select Simulated Smartcard Profile:
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: "CARD-VALID-01", label: "Eligible Card 1 (VALID)" },
+                { id: "CARD-VALID-02", label: "Eligible Card 2 (VALID)" },
+                { id: "CARD-REVOKED-01", label: "Lost Card (REVOKED)" },
+                { id: "CARD-INVALID-99", label: "Malformed Card (INVALID)" },
+              ].map((card) => (
+                <button
+                  key={card.id}
+                  onClick={() => {
+                    setRfidCard(card.id);
+                    handleTapRFID(card.id);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    rfidCard === card.id
+                      ? "bg-blue-600 text-white border-blue-500"
+                      : "bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700"
+                  }`}
+                >
+                  {card.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+            <input
+              type="text"
+              value={rfidCard}
+              onChange={(e) => setRfidCard(e.target.value)}
+              placeholder="Or enter custom raw chip UID..."
+              className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={() => handleTapRFID()}
+              disabled={rfidLoading}
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shrink-0 transition disabled:opacity-50"
+            >
+              {rfidLoading ? "Reading Card..." : "Tap Smartcard"}
+            </button>
+          </div>
+
+          {rfidResult && (
+            <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 space-y-2 text-xs font-mono">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <span className="font-semibold text-slate-300 font-sans">Tap Result:</span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                    rfidResult.card_status === "VALID"
+                      ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                      : rfidResult.card_status === "REPEATED_USE"
+                      ? "bg-amber-950 text-amber-400 border border-amber-800"
+                      : "bg-rose-950 text-rose-400 border border-rose-800"
+                  }`}
+                >
+                  {rfidResult.card_status}
+                </span>
+              </div>
+              <div className="space-y-1 text-slate-400 text-[11px]">
+                <div>
+                  <span className="text-slate-500">Keyed Pseudonym: </span>
+                  <span className="text-purple-300 break-all">{rfidResult.pseudonym || "None (Format Rejected)"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Voting Session: </span>
+                  <span className="text-slate-200">{rfidResult.session_id ? `Granted (token: ${rfidResult.session_id.slice(0, 16)}...)` : "None"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Architectural Notice: </span>
+                  <span className="text-amber-300 font-sans">{rfidResult.notice}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Defense-in-Depth Verification Matrix */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">

@@ -120,3 +120,27 @@ async def observer_token(client: AsyncClient) -> str:
         json={"username": "observer", "password": "obs12345"},
     )
     return resp.json()["access_token"]
+
+
+@pytest.fixture
+def ephemeral_signing_key():
+    """
+    Generate an ephemeral Ed25519 keypair for test execution.
+    Injects the key into SigningService and clears it after test completion.
+    Ensures tests are completely deterministic without persistent/external keys.
+    """
+    from app.services.signing_service import SigningService
+
+    priv, pub = SigningService.generate_keypair()
+    SigningService.set_keypair(priv, pub, key_id="ephemeral-test-key")
+    yield priv, pub
+    SigningService.clear_keypair()
+
+
+@pytest.fixture(autouse=True)
+def rfid_test_secret(monkeypatch):
+    """
+    Ensure SECUREVOTE_RFID_SECRET is populated with an ephemeral test secret
+    during tests, avoiding any dependency on production or persistent secrets.
+    """
+    monkeypatch.setenv("SECUREVOTE_RFID_SECRET", "test-ephemeral-rfid-secret-salt-fixture")

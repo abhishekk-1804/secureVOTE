@@ -251,3 +251,111 @@ export interface ElectionExportResponse {
   manifest: any | null;
   export_hash: string;
 }
+
+// ===========================================================================
+// Phase 5: Cryptographic Signing, Anchoring, Anomalies & RFID Types
+// ===========================================================================
+
+export interface PublicKeyInfoResponse {
+  key_id: string;
+  algorithm: string;
+  public_key_hex: string;
+  fingerprint: string;
+  status: string;
+}
+
+export interface SignedManifestResponse {
+  manifest_id: string;
+  election_id: string;
+  manifest_hash: string;
+  digital_signature: {
+    algorithm?: string;
+    key_id?: string;
+    public_key?: string;
+    signature?: string;
+    fingerprint?: string;
+    signed_payload?: Record<string, any>;
+  };
+  signed_at?: string;
+  signed_by?: string;
+}
+
+export interface AuditAnchorResponse {
+  anchor_id: string;
+  election_id: string;
+  provider: string;
+  root_hash: string;
+  anchored_at: string;
+  actor?: string | null;
+  commitment_receipt: {
+    status: string;
+    provider?: string;
+    timestamp?: string;
+    receipt_id?: string;
+    [key: string]: any;
+  };
+}
+
+export interface AdvisoryFinding {
+  finding_id: string;
+  election_id: string;
+  device_id?: string | null;
+  rule_id: string;
+  category: string;
+  severity: "LOW" | "MEDIUM" | "HIGH";
+  evidence: Record<string, any>;
+  timestamp: string;
+  advisory_explanation: string;
+  requires_human_review: boolean;
+}
+
+export interface AdvisoryFindingsResponse {
+  election_id: string;
+  findings_count: number;
+  findings: AdvisoryFinding[];
+  status: string;
+}
+
+export interface RFIDTapRequest {
+  raw_uid: string;
+  device_id: string;
+  election_id: string;
+}
+
+export interface RFIDTapResponse {
+  authenticated: boolean;
+  pseudonym: string;
+  card_status: "VALID" | "INVALID" | "REVOKED" | "REPEATED_USE";
+  device_id: string;
+  session_id?: string | null;
+  notice: string;
+}
+
+export interface IndependentVerificationResult {
+  valid: boolean;
+  checks: {
+    export_envelope: boolean;
+    configuration: boolean;
+    ballot_hashes: boolean;
+    ballot_sequence: boolean;
+    candidate_totals: boolean;
+    device_totals: boolean;
+    reconciliation: boolean;
+    audit_chain: boolean;
+    audit_root: boolean;
+    manifest: boolean;
+    signature: boolean;
+    anchor: boolean;
+  };
+  failures: string[];
+  details: string[];
+  summary: {
+    election_id: string;
+    total_ballots_recounted: number;
+    candidates_recounted: number;
+    devices_recounted: number;
+    audit_entries_recomputed: number;
+    audit_root_hash: string;
+    reconciliation_drift: number;
+  };
+}

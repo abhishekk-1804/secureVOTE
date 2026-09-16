@@ -21,6 +21,12 @@ import {
   VerificationResponse,
   WsTicketResponse,
   ElectionExportResponse,
+  PublicKeyInfoResponse,
+  SignedManifestResponse,
+  AuditAnchorResponse,
+  AdvisoryFindingsResponse,
+  RFIDTapRequest,
+  RFIDTapResponse,
 } from "./types";
 
 
@@ -282,6 +288,73 @@ export const api = {
       {},
       token
     );
+  },
+
+  // Phase 5: Cryptographic Signing
+  async getSigningPublicKey(): Promise<PublicKeyInfoResponse> {
+    return request<PublicKeyInfoResponse>("/api/signing/public-key");
+  },
+
+  async signElectionManifest(
+    electionId: string,
+    token: string
+  ): Promise<SignedManifestResponse> {
+    return request<SignedManifestResponse>(
+      `/api/elections/${electionId}/sign-manifest`,
+      { method: "POST" },
+      token
+    );
+  },
+
+  // Phase 5: Audit Root Anchoring
+  async getElectionAnchors(
+    electionId: string,
+    token?: string | null
+  ): Promise<AuditAnchorResponse[]> {
+    return request<AuditAnchorResponse[]>(
+      `/api/elections/${electionId}/anchors`,
+      {},
+      token
+    );
+  },
+
+  async createElectionAnchor(
+    electionId: string,
+    token: string,
+    provider: string = "LOCAL ANCHOR"
+  ): Promise<AuditAnchorResponse> {
+    return request<AuditAnchorResponse>(
+      `/api/elections/${electionId}/anchors`,
+      {
+        method: "POST",
+        body: JSON.stringify({ provider }),
+      },
+      token
+    );
+  },
+
+  // Phase 5: Advisory Anomaly Detection
+  async getElectionAnomalies(
+    electionId: string,
+    token?: string | null
+  ): Promise<AdvisoryFindingsResponse> {
+    return request<AdvisoryFindingsResponse>(
+      `/api/elections/${electionId}/anomalies`,
+      {},
+      token
+    );
+  },
+
+  // Phase 5: RFID / Identity Abstraction
+  async tapRFID(data: RFIDTapRequest): Promise<RFIDTapResponse> {
+    return request<RFIDTapResponse>("/api/rfid/tap", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getRFIDDemoCards(): Promise<{ cards: any[]; pseudonymization_algorithm: string; boundary_notice: string }> {
+    return request<{ cards: any[]; pseudonymization_algorithm: string; boundary_notice: string }>("/api/rfid/demo-cards");
   },
 };
 

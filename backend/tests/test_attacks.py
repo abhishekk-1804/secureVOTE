@@ -365,3 +365,205 @@ async def test_attack_8_unknown_and_revoked_device(client: AsyncClient, admin_he
     )
     assert resp_revoked.status_code == 403
     assert "DEVICE REJECTED" in resp_revoked.json()["detail"]
+
+
+# ===========================================================================
+# Phase 5 Attack 9: Modified signed result -> SIGNATURE_INVALID
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_9_modified_signed_result(
+    client: AsyncClient,
+    admin_headers: dict,
+    ephemeral_signing_key,
+):
+    """
+    Attack 9: Attacker modifies any byte in the signed result payload or signature.
+    Expected: Independent Verifier reports SIGNATURE_INVALID.
+    """
+    election_id = "EV-2026-109"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    # Cast 1 vote
+    s_resp = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VOTER-ATK9-1", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    token = s_resp.json()["session_token"]
+    await client.post(
+        "/api/votes",
+        json={"session_token": token, "candidate_id": "C001", "device_id": "EVM-001", "sequence_number": 1},
+    )
+
+    # Close and verify and sign
+    await client.patch(f"/api/elections/{election_id}/state", json={"new_state": "CLOSED"}, headers=admin_headers)
+    await client.post(f"/api/elections/{election_id}/verify", headers=admin_headers)
+    await client.post(f"/api/elections/{election_id}/sign-manifest", headers=admin_headers)
+
+    # Export
+    export_resp = await client.get(f"/api/elections/{election_id}/export", headers=admin_headers)
+    export_data = export_resp.json()
+
+    # Tamper with the digital signature
+    from standalone_verifier.verifier import StandaloneElectionVerifier
+    import json
+    sig_obj = json.loads(export_data["manifest"]["digital_signature"])
+    sig_obj["signature"] = "0" * len(sig_obj["signature"])
+    export_data["manifest"]["digital_signature"] = json.dumps(sig_obj)
+
+    result = StandaloneElectionVerifier.verify_export_data(export_data)
+    assert result["valid"] is False
+    assert "SIGNATURE_INVALID" in result["failures"]
+    assert result["checks"]["signature"] is False
+
+
+# ===========================================================================
+# Phase 5 Attack 10: Modified exported ballot -> BALLOT_HASH_MISMATCH
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_10_modified_exported_ballot(
+    client: AsyncClient,
+    admin_headers: dict,
+    ephemeral_signing_key,
+):
+    """
+    Attack 10: Attacker alters candidate selection inside an exported ballot record.
+    Expected: Independent Verifier recalculates SHA-256 hash and detects BALLOT_HASH_MISMATCH.
+    """
+    election_id = "EV-2026-110"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    # Cast 1 vote
+    s_resp = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VOTER-ATK10-1", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    token = s_resp.json()["session_token"]
+    await client.post(
+        "/api/votes",
+        json={"session_token": token, "candidate_id": "C001", "device_id": "EVM-001", "sequence_number": 1},
+    )
+
+    await client.patch(f"/api/elections/{election_id}/state", json={"new_state": "CLOSED"}, headers=admin_headers)
+    export_resp = await client.get(f"/api/elections/{election_id}/export", headers=admin_headers)
+    export_data = export_resp.json()
+
+    # Tamper with candidate in ballot record
+    from standalone_verifier.verifier import StandaloneElectionVerifier
+    export_data["ballots"][0]["candidate_id"] = "C002"
+
+    result = StandaloneElectionVerifier.verify_export_data(export_data)
+    assert result["valid"] is False
+    assert any("BALLOT_HASH_MISMATCH" in f for f in result["failures"])
+    assert result["checks"]["ballot_hashes"] is False
+
+
+# ===========================================================================
+# Phase 5 Attack 11: Modified anchor root -> ANCHOR_MISMATCH
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_11_modified_anchor_root(
+    client: AsyncClient,
+    admin_headers: dict,
+    ephemeral_signing_key,
+):
+    """
+    Attack 11: Attacker attempts to forge or mutate the external anchored audit root.
+    Expected: Independent Verifier reports ANCHOR_MISMATCH.
+    """
+    election_id = "EV-2026-111"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    await client.patch(f"/api/elections/{election_id}/state", json={"new_state": "CLOSED"}, headers=admin_headers)
+    anchor_resp = await client.post(
+        f"/api/elections/{election_id}/anchors",
+        json={"provider": "LOCAL ANCHOR"},
+        headers=admin_headers,
+    )
+    receipt = anchor_resp.json()
+
+    export_resp = await client.get(f"/api/elections/{election_id}/export", headers=admin_headers)
+    export_data = export_resp.json()
+
+    # Modify anchored root to forged hash
+    receipt["root_hash"] = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+
+    from standalone_verifier.verifier import StandaloneElectionVerifier
+    result = StandaloneElectionVerifier.verify_export_data(export_data, anchor_receipt=receipt)
+    assert result["valid"] is False
+    assert "ANCHOR_MISMATCH" in result["failures"]
+    assert result["checks"]["anchor"] is False
+
+
+# ===========================================================================
+# Phase 5 Attack 12: High-severity anomaly -> ADVISORY FINDING (Not blocking)
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_12_high_severity_anomaly_does_not_block_operations(
+    client: AsyncClient,
+    admin_headers: dict,
+    ephemeral_signing_key,
+    db_engine,
+):
+    """
+    Attack 12: An adversary triggers physical chassis breach or extreme voting rate bursts
+    producing HIGH-severity advisory anomaly findings.
+    Expected: Anomaly is logged with ADVISORY FINDING notice, but election operations,
+    manifest verification, and digital signing proceed unaffected without denial of service.
+    """
+    election_id = "EV-2026-112"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    # Cast vote
+    s_resp = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VOTER-ATK12-1", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    token = s_resp.json()["session_token"]
+    await client.post(
+        "/api/votes",
+        json={"session_token": token, "candidate_id": "C001", "device_id": "EVM-001", "sequence_number": 1},
+    )
+
+    # Inject HIGH-severity hardware tamper switch event
+    from app.services.audit_service import AuditService
+    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    async with session_factory() as session:
+        await AuditService.log_event(
+            db=session,
+            election_id=election_id,
+            event_type="DEVICE_TAMPER_SWITCH",
+            event_data='{"switch": "chassis", "state": "BREACH"}',
+            actor="adversary",
+            device_id="EVM-001",
+        )
+        await session.commit()
+
+    # Confirm advisory finding is present
+    ano_resp = await client.get(f"/api/elections/{election_id}/anomalies", headers=admin_headers)
+    assert ano_resp.status_code == 200
+    ano_data = ano_resp.json()
+    high_findings = [f for f in ano_data["findings"] if f["severity"] == "HIGH"]
+    assert len(high_findings) >= 1
+    assert ano_data["status"] == "ADVISORY_ONLY_DOES_NOT_BLOCK_LIFECYCLE"
+
+    # HARD BOUNDARY: Closing election and digital signing MUST NOT be blocked
+    close_resp = await client.patch(
+        f"/api/elections/{election_id}/state",
+        json={"new_state": "CLOSED"},
+        headers=admin_headers,
+    )
+    assert close_resp.status_code == 200
+
+    verify_resp = await client.post(f"/api/elections/{election_id}/verify", headers=admin_headers)
+    assert verify_resp.status_code == 200
+
+    sign_resp = await client.post(f"/api/elections/{election_id}/sign-manifest", headers=admin_headers)
+    assert sign_resp.status_code == 200
+    assert sign_resp.json()["digital_signature"]["algorithm"] == "Ed25519"

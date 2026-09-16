@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api-client";
-import { VerificationResponse, ElectionResponse } from "@/lib/types";
+import { VerificationResponse, ElectionResponse, AuditAnchorResponse } from "@/lib/types";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { AlertBanner } from "@/components/common/AlertBanner";
 import {
@@ -15,6 +15,8 @@ import {
   RefreshCw,
   Award,
   AlertTriangle,
+  Key,
+  Anchor,
 } from "lucide-react";
 
 export default function ResultsPage() {
@@ -22,9 +24,13 @@ export default function ResultsPage() {
   const [elections, setElections] = useState<ElectionResponse[]>([]);
   const [selectedElectionId, setSelectedElectionId] = useState<string>("EV-2026-001");
   const [results, setResults] = useState<VerificationResponse | null>(null);
+  const [anchors, setAnchors] = useState<AuditAnchorResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [verifyLoading, setVerifyLoading] = useState<boolean>(false);
+  const [signLoading, setSignLoading] = useState<boolean>(false);
+  const [anchorLoading, setAnchorLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [showManifestJson, setShowManifestJson] = useState<boolean>(false);
 
   const fetchResults = async (electionId: string) => {
@@ -38,6 +44,12 @@ export default function ResultsPage() {
         setSelectedElectionId(target.id);
         const res = await api.getResults(target.id, token);
         setResults(res);
+        try {
+          const anc = await api.getElectionAnchors(target.id, token);
+          setAnchors(anc);
+        } catch {
+          setAnchors([]);
+        }
       }
     } catch (err: any) {
       setError(err.message || "Failed to load independent results");
@@ -58,13 +70,47 @@ export default function ResultsPage() {
     }
     setVerifyLoading(true);
     setError(null);
+    setActionSuccess(null);
     try {
       const res = await api.runVerification(selectedElectionId, token);
       setResults(res);
+      setActionSuccess("Verification and manifest generation completed successfully.");
     } catch (err: any) {
       setError(err.message || "Independent verification execution failed");
     } finally {
       setVerifyLoading(false);
+    }
+  };
+
+  const handleSignManifest = async () => {
+    if (!token) return;
+    setSignLoading(true);
+    setError(null);
+    setActionSuccess(null);
+    try {
+      await api.signElectionManifest(selectedElectionId, token);
+      await fetchResults(selectedElectionId);
+      setActionSuccess("Result manifest digitally signed with Ed25519.");
+    } catch (err: any) {
+      setError(err.message || "Manifest digital signing failed");
+    } finally {
+      setSignLoading(false);
+    }
+  };
+
+  const handleAnchorRoot = async () => {
+    if (!token) return;
+    setAnchorLoading(true);
+    setError(null);
+    setActionSuccess(null);
+    try {
+      await api.createElectionAnchor(selectedElectionId, token, "LOCAL ANCHOR");
+      await fetchResults(selectedElectionId);
+      setActionSuccess("Audit root anchored successfully (LOCAL ANCHOR).");
+    } catch (err: any) {
+      setError(err.message || "Audit root anchoring failed");
+    } finally {
+      setAnchorLoading(false);
     }
   };
 
@@ -265,6 +311,126 @@ export default function ResultsPage() {
               </pre>
             </div>
           )}
+
+          {/* Phase 5: Cryptographic Signing & Audit Anchoring Card */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Key className="w-4 h-4 text-purple-400" />
+                  Cryptographic Signing & External Anchoring
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Ed25519 asymmetric manifest signature & SHA-256 audit-root external commitment
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {(!manifest?.digital_signature || manifest.digital_signature === "null") && (role === "ADMIN" || role === "AUDITOR") && (
+                  <button
+                    onClick={handleSignManifest}
+                    disabled={signLoading || !results?.reconciliation_passed}
+                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors"
+                  >
+                    <Key className={`w-3.5 h-3.5 ${signLoading ? "animate-spin" : ""}`} />
+                    {signLoading ? "Signing..." : "Sign Manifest (Ed25519)"}
+                  </button>
+                )}
+
+                {(role === "ADMIN" || role === "AUDITOR") && (
+                  <button
+                    onClick={handleAnchorRoot}
+                    disabled={anchorLoading}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors"
+                  >
+                    <Anchor className={`w-3.5 h-3.5 ${anchorLoading ? "animate-spin" : ""}`} />
+                    {anchorLoading ? "Anchoring..." : "Anchor Root (Local)"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* Digital Signature Status */}
+              <div className="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-purple-400" />
+                    Ed25519 Digital Signature
+                  </span>
+                  {manifest?.digital_signature && manifest.digital_signature !== "null" ? (
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+                      DIGITALLY SIGNED
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-950/80 text-amber-400 border border-amber-800">
+                      UNSIGNED
+                    </span>
+                  )}
+                </div>
+
+                {manifest?.digital_signature && manifest.digital_signature !== "null" ? (
+                  <div className="space-y-1.5 text-slate-400 font-mono text-[11px]">
+                    <div>
+                      <span className="text-slate-500">Algorithm:</span> Ed25519
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Signer / Actor:</span>{" "}
+                      <span className="text-slate-200">{manifest.verified_by || "admin"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Manifest Hash:</span>{" "}
+                      <span className="text-purple-300 break-all">{manifest.manifest_hash}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-[11px]">
+                    Election manifest is not yet digitally signed. Run reconciliation and sign manifest with authorized key.
+                  </p>
+                )}
+              </div>
+
+              {/* Audit Root Anchor Status */}
+              <div className="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Anchor className="w-3.5 h-3.5 text-blue-400" />
+                    Audit Root Anchoring
+                  </span>
+                  {anchors.length > 0 ? (
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-950/80 text-blue-400 border border-blue-800">
+                      {anchors[0].provider}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                      NOT CONFIGURED
+                    </span>
+                  )}
+                </div>
+
+                {anchors.length > 0 ? (
+                  <div className="space-y-1.5 text-slate-400 font-mono text-[11px]">
+                    <div>
+                      <span className="text-slate-500">Anchored Root:</span>{" "}
+                      <span className="text-blue-300 break-all">{anchors[0].root_hash}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Timestamp:</span>{" "}
+                      <span className="text-slate-300">{new Date(anchors[0].anchored_at).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Receipt ID:</span>{" "}
+                      <span className="text-slate-300">{anchors[0].commitment_receipt?.receipt_id || anchors[0].anchor_id}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-[11px]">
+                    No external or local audit anchors committed yet for this election.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Candidate Results Table & Progress Bars */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">

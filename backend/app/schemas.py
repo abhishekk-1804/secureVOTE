@@ -6,6 +6,7 @@ from SQLAlchemy model instances.
 """
 
 from datetime import datetime
+from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -371,3 +372,109 @@ class ElectionExportResponse(BaseModel):
     audit_log: list[AuditExportItem]
     manifest: dict | None = None
     export_hash: str
+
+
+# ===========================================================================
+# Phase 5: Cryptographic Signing
+# ===========================================================================
+
+class PublicKeyInfoResponse(BaseModel):
+    configured: bool
+    algorithm: str = "Ed25519"
+    key_id: str | None = None
+    public_key: str | None = None
+    fingerprint: str | None = None
+
+
+class VerifySignatureRequest(BaseModel):
+    payload: dict[str, Any]
+    signature: str
+    public_key: str | None = None
+
+
+class VerifySignatureResponse(BaseModel):
+    valid: bool
+    algorithm: str = "Ed25519"
+    details: str
+    key_id: str | None = None
+    fingerprint: str | None = None
+
+
+class SignedManifestResponse(BaseModel):
+    manifest_id: str
+    election_id: str
+    manifest_hash: str
+    digital_signature: dict[str, Any]
+    signed_at: datetime
+    signed_by: str
+
+
+# ===========================================================================
+# Phase 5: External Audit-Root Anchoring
+# ===========================================================================
+
+class AnchorRequest(BaseModel):
+    provider_type: str = "LOCAL"  # LOCAL or EXTERNAL
+
+
+class AnchorReceiptResponse(BaseModel):
+    anchor_id: str
+    election_id: str
+    root_hash: str
+    provider_type: str  # LOCAL ANCHOR, EXTERNAL ANCHOR, NOT CONFIGURED, ENVIRONMENT-BLOCKED
+    anchor_reference: str
+    status: str  # LOCAL ANCHOR, EXTERNAL ANCHOR, NOT ANCHORED, ANCHOR VERIFICATION FAILED
+    anchored_at: datetime
+    metadata: dict[str, Any] = {}
+
+
+class VerifyAnchorResponse(BaseModel):
+    verified: bool
+    status: str
+    provider_type: str
+    anchor_reference: str
+    root_hash: str
+    details: str
+
+
+# ===========================================================================
+# Phase 5: Advisory Anomaly Detection
+# ===========================================================================
+
+class AdvisoryFinding(BaseModel):
+    finding_id: str
+    election_id: str
+    device_id: str | None = None
+    rule_id: str
+    category: str
+    severity: str  # LOW, MEDIUM, HIGH
+    evidence: dict[str, Any]
+    timestamp: datetime
+    advisory_explanation: str
+    requires_human_review: bool = True
+
+
+class AdvisoryFindingsResponse(BaseModel):
+    election_id: str
+    findings_count: int
+    findings: list[AdvisoryFinding]
+    status: str = "ADVISORY_ONLY_DOES_NOT_BLOCK_LIFECYCLE"
+
+
+# ===========================================================================
+# Phase 5: RFID / Identity Abstraction
+# ===========================================================================
+
+class RFIDTapRequest(BaseModel):
+    raw_uid: str
+    device_id: str
+    election_id: str
+
+
+class RFIDTapResponse(BaseModel):
+    authenticated: bool
+    pseudonym: str
+    card_status: str  # VALID, INVALID, REVOKED, REPEATED_USE
+    device_id: str
+    session_id: str | None = None
+    notice: str = "RFID AUTHENTICATION != VOTER ELIGIBILITY"

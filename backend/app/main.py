@@ -46,7 +46,7 @@ app.add_middleware(
 )
 
 # Import and register routers
-from app.routers import auth, elections, votes, devices, audit, results, websockets  # noqa: E402
+from app.routers import auth, elections, votes, devices, audit, results, websockets, signing, anchors, anomalies, rfid  # noqa: E402
 
 app.include_router(auth.router)
 app.include_router(elections.router)
@@ -55,6 +55,12 @@ app.include_router(devices.router)
 app.include_router(audit.router)
 app.include_router(results.router)
 app.include_router(websockets.router)
+app.include_router(signing.router)
+app.include_router(signing.election_signing_router)
+app.include_router(anchors.router)
+app.include_router(anchors.election_anchor_router)
+app.include_router(anomalies.router)
+app.include_router(rfid.router)
 
 
 

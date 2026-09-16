@@ -180,7 +180,7 @@ async def export_election(
             "candidate_id": b.candidate_id,
             "sequence_number": b.sequence_number,
             "ballot_hash": b.ballot_hash,
-            "recorded_at": b.recorded_at.isoformat(),
+            "recorded_at": format_iso_timestamp(b.recorded_at),
         }
         for b in ballots
     ]

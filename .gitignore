@@ -51,3 +51,8 @@ docker-compose.override.yml
 *.key
 .env.local
 .env.production
+
+# Exports
+exports/
+export_*.json
+*.export.json
