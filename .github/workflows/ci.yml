@@ -1,0 +1,82 @@
+name: SecureVOTE CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  firmware:
+    name: Firmware Build & Native Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Compile Arduino Uno Firmware
+        run: pio run -d firmware -e uno
+
+      - name: Run Native Firmware Unit Tests
+        run: pio test -d firmware -e native
+
+  backend:
+    name: Backend API & Verification Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Backend Pytest Suite
+        run: |
+          cd backend
+          pytest tests/ -v
+
+  dashboard:
+    name: Dashboard Tests & Production Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: "dashboard/package-lock.json"
+
+      - name: Install Dependencies
+        run: |
+          cd dashboard
+          npm ci
+
+      - name: Run Vitest Unit Tests
+        run: |
+          cd dashboard
+          npm test -- --run
+
+      - name: Build Next.js Dashboard
+        run: |
+          cd dashboard
+          npm run build

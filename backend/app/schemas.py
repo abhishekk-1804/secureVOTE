@@ -284,3 +284,90 @@ class ErrorResponse(BaseModel):
 
 class SuccessResponse(BaseModel):
     message: str
+
+
+# ===========================================================================
+# WebSocket Ticket
+# ===========================================================================
+
+class WsTicketRequest(BaseModel):
+    election_id: str | None = None
+
+
+class WsTicketResponse(BaseModel):
+    ticket: str
+    expires_in: int = 60
+    election_id: str | None = None
+
+
+
+# ===========================================================================
+# Machine-Verifiable Export
+# ===========================================================================
+
+class BallotExportItem(BaseModel):
+    id: str
+    session_id: str
+    device_id: str
+    candidate_id: str
+    sequence_number: int
+    ballot_hash: str
+    recorded_at: str
+
+
+class AuditExportItem(BaseModel):
+    id: int | str
+    sequence_number: int
+    event_type: str
+    event_data: str | None
+    actor: str | None
+    device_id: str | None
+    timestamp: str
+    previous_hash: str | None
+    entry_hash: str
+
+
+
+class DeviceExportItem(BaseModel):
+    id: str
+    name: str
+    status: str
+    last_sequence_number: int
+    total_votes_cast: int
+    registered_at: str
+    activated_at: str | None
+    last_seen_at: str | None
+
+
+class CandidateExportItem(BaseModel):
+    id: str
+    name: str
+    party: str | None
+    symbol: str | None
+    position: int
+
+
+class ElectionExportMeta(BaseModel):
+    id: str
+    name: str
+    description: str | None
+    state: str
+    configuration_hash: str | None
+    total_ballots: int
+    created_at: str
+    locked_at: str | None
+    opened_at: str | None
+    closed_at: str | None
+    published_at: str | None
+
+
+class ElectionExportResponse(BaseModel):
+    export_version: str = "1.0.0"
+    exported_at: str
+    election: ElectionExportMeta
+    candidates: list[CandidateExportItem]
+    devices: list[DeviceExportItem]
+    ballots: list[BallotExportItem]
+    audit_log: list[AuditExportItem]
+    manifest: dict | None = None
+    export_hash: str

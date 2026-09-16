@@ -15,7 +15,9 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import AuditEntry
+from app.services.websocket_service import websocket_manager
 from app.utils.hashing import compute_audit_entry_hash
+
 
 
 class AuditService:
@@ -80,7 +82,23 @@ class AuditService:
         )
         db.add(entry)
         await db.flush()
+
+        await websocket_manager.broadcast(
+            election_id=election_id,
+            event_type="AUDIT_EVENT",
+            data={
+                "id": entry.id,
+                "sequence_number": entry.sequence_number,
+                "event_type": entry.event_type,
+                "entry_hash": entry.entry_hash,
+                "actor": entry.actor,
+                "device_id": entry.device_id,
+                "timestamp": entry.timestamp.isoformat(),
+            },
+        )
+
         return entry
+
 
     @staticmethod
     async def get_audit_log(

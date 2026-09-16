@@ -176,3 +176,78 @@ export interface HealthCheckResponse {
   app: string;
   version: string;
 }
+
+export interface WsTicketResponse {
+  ticket: string;
+  expires_in: number;
+  election_id?: string | null;
+}
+
+
+export interface BallotExportItem {
+  id: string;
+  session_id: string;
+  device_id: string;
+  candidate_id: string;
+  sequence_number: number;
+  ballot_hash: string;
+  recorded_at: string;
+}
+
+export interface AuditExportItem {
+  id: number | string;
+  sequence_number: number;
+
+  event_type: string;
+  event_data: string | null;
+  actor: string | null;
+  device_id: string | null;
+  timestamp: string;
+  previous_hash: string | null;
+  entry_hash: string;
+}
+
+export interface DeviceExportItem {
+  id: string;
+  name: string;
+  status: string;
+  last_sequence_number: number;
+  total_votes_cast: number;
+  registered_at: string;
+  activated_at: string | null;
+  last_seen_at: string | null;
+}
+
+export interface CandidateExportItem {
+  id: string;
+  name: string;
+  party: string | null;
+  symbol: string | null;
+  position: number;
+}
+
+export interface ElectionExportMeta {
+  id: string;
+  name: string;
+  description: string | null;
+  state: string;
+  configuration_hash: string | null;
+  total_ballots: number;
+  created_at: string;
+  locked_at: string | null;
+  opened_at: string | null;
+  closed_at: string | null;
+  published_at: string | null;
+}
+
+export interface ElectionExportResponse {
+  export_version: string;
+  exported_at: string;
+  election: ElectionExportMeta;
+  candidates: CandidateExportItem[];
+  devices: DeviceExportItem[];
+  ballots: BallotExportItem[];
+  audit_log: AuditExportItem[];
+  manifest: any | null;
+  export_hash: string;
+}

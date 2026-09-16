@@ -19,7 +19,10 @@ import {
   TokenResponse,
   UserResponse,
   VerificationResponse,
+  WsTicketResponse,
+  ElectionExportResponse,
 } from "./types";
+
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -252,7 +255,36 @@ export const api = {
       token
     );
   },
+
+  // WebSocket Ticket Handshake (supports election-scoped or global tickets)
+  async getWsTicket(
+    token: string,
+    electionId?: string | null
+  ): Promise<WsTicketResponse> {
+    return request<WsTicketResponse>(
+      "/api/auth/ws-ticket",
+      {
+        method: "POST",
+        body: JSON.stringify({ election_id: electionId || null }),
+      },
+      token
+    );
+  },
+
+
+  // Machine-Verifiable Export
+  async exportElection(
+    electionId: string,
+    token?: string | null
+  ): Promise<ElectionExportResponse> {
+    return request<ElectionExportResponse>(
+      `/api/elections/${electionId}/export`,
+      {},
+      token
+    );
+  },
 };
+
 
 /**
  * Phase 2 Continuity Helper: Detects whether an event or session is DEMO-MODE synthetic.

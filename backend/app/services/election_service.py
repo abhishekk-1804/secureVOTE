@@ -23,7 +23,9 @@ from app.schemas import (
     ElectionStateChange,
 )
 from app.services.audit_service import AuditService
+from app.services.websocket_service import websocket_manager
 from app.utils.hashing import compute_configuration_hash
+
 
 
 # Valid state transitions for the election lifecycle
@@ -240,7 +242,19 @@ class ElectionService:
             actor=actor,
         )
 
+        await websocket_manager.broadcast(
+            election_id=election_id,
+            event_type="ELECTION_STATE_CHANGED",
+            data={
+                "election_id": election_id,
+                "old_state": old_state,
+                "new_state": new_state,
+                "reason": data.reason,
+            },
+        )
+
         return await ElectionService.get_election(db, election_id)
+
 
     @staticmethod
     async def get_candidates(

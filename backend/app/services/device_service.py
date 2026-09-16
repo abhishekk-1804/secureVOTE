@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Device, Election
 from app.schemas import DeviceRegister, DeviceStatusUpdate
 from app.services.audit_service import AuditService
+from app.services.websocket_service import websocket_manager
+
 
 
 class DeviceService:
@@ -149,7 +151,18 @@ class DeviceService:
             device_id=device_id,
         )
 
+        await websocket_manager.broadcast(
+            election_id=election_id,
+            event_type="DEVICE_STATUS_CHANGED",
+            data={
+                "device_id": device_id,
+                "old_status": old_status,
+                "new_status": data.status,
+            },
+        )
+
         return device
+
 
     @staticmethod
     async def get_device(

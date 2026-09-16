@@ -46,7 +46,7 @@ app.add_middleware(
 )
 
 # Import and register routers
-from app.routers import auth, elections, votes, devices, audit, results  # noqa: E402
+from app.routers import auth, elections, votes, devices, audit, results, websockets  # noqa: E402
 
 app.include_router(auth.router)
 app.include_router(elections.router)
@@ -54,6 +54,8 @@ app.include_router(votes.router)
 app.include_router(devices.router)
 app.include_router(audit.router)
 app.include_router(results.router)
+app.include_router(websockets.router)
+
 
 
 @app.get("/api/health")

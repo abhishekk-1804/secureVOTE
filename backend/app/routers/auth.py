@@ -7,7 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import User
-from app.schemas import LoginRequest, TokenResponse, UserCreate, UserResponse
+from app.schemas import (
+    LoginRequest,
+    TokenResponse,
+    UserCreate,
+    UserResponse,
+    WsTicketRequest,
+    WsTicketResponse,
+)
+from app.services.websocket_service import websocket_manager
+
 from app.utils.security import create_access_token, decode_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -87,3 +96,23 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
 async def get_me(current_user: User = Depends(get_current_user)):
     """Get current authenticated user info."""
     return current_user
+
+
+@router.post("/ws-ticket", response_model=WsTicketResponse)
+async def create_ws_ticket(
+    data: WsTicketRequest | None = None,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Generate a short-lived (60s), single-use ticket for WebSocket authentication.
+    Prevents passing long-lived JWTs in URL query parameters.
+    Can be scoped to a specific election_id or global (None).
+    """
+    election_id = data.election_id if data else None
+    ticket = websocket_manager.create_ticket(
+        username=current_user.username,
+        role=current_user.role,
+        election_id=election_id,
+        ttl_seconds=60,
+    )
+    return WsTicketResponse(ticket=ticket, expires_in=60, election_id=election_id)

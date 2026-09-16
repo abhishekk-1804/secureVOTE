@@ -19,7 +19,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Ballot, Candidate, Device, Election, VotingSession
 from app.schemas import SessionAuthorize, VoteCast, VoteResponse
 from app.services.audit_service import AuditService
+from app.services.websocket_service import websocket_manager
 from app.utils.hashing import compute_ballot_hash
+
 from app.utils.identifiers import generate_session_token, generate_uuid
 
 
@@ -230,6 +232,19 @@ class VoteService:
             },
             actor=actor,
             device_id=data.device_id,
+        )
+
+        # Broadcast VOTE_CAST event over WebSocket
+        await websocket_manager.broadcast(
+            election_id=session.election_id,
+            event_type="VOTE_CAST",
+            data={
+                "ballot_id": ballot_id,
+                "device_id": data.device_id,
+                "sequence_number": data.sequence_number,
+                "ballot_hash": ballot_hash,
+                "total_ballots": election.total_ballots,
+            },
         )
 
         return VoteResponse(
