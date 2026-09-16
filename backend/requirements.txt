@@ -1,0 +1,32 @@
+# FastAPI + ASGI
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+aiosqlite==0.20.0
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+python-multipart==0.0.18
+
+# Validation & Serialization
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# Cryptographic signing (backend-only, per Â§9)
+cryptography==44.0.0
+
+# Serial communication (Phase 2+)
+pyserial==3.5
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1
+
+# CORS
+# (built into FastAPI/Starlette)
