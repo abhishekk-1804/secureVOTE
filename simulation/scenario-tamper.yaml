@@ -1,0 +1,19 @@
+name: 'Tamper Switch Simulation Scenario'
+version: 1
+author: 'SecureVOTE Team'
+steps:
+  # 1. Wait for firmware to complete boot self-test and transition to READY
+  - wait-serial: '{"type":"STATE_CHANGE","device_id":"EVM-001","sequence_number":0,"from_state":"SELF_TEST","to_state":"READY"}'
+  - delay: 500ms
+
+  # 2. Trigger the physical tamper switch (enclosure breached)
+  - set-control:
+      part-id: btn_tamper
+      control: pressed
+      value: 1
+
+  # 3. Verify firmware immediately emits TAMPER alert
+  - wait-serial: '{"type":"TAMPER","device_id":"EVM-001","sequence_number":0,"details":"enclosure_breached"}'
+
+  # 4. Verify firmware emits STATE_CHANGE with previous state as READY (NOT TAMPER_DETECTED -> TAMPER_DETECTED)
+  - wait-serial: '{"type":"STATE_CHANGE","device_id":"EVM-001","sequence_number":0,"from_state":"READY","to_state":"TAMPER_DETECTED"}'

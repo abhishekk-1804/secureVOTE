@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "author": "SecureVOTE Team",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "top": 120,
+      "left": 150,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd2004",
+      "id": "lcd",
+      "top": -120,
+      "left": 80,
+      "attrs": { "pins": "i2c" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_c1",
+      "top": 120,
+      "left": -60,
+      "attrs": { "color": "green", "label": "1: Alice" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_c2",
+      "top": 180,
+      "left": -60,
+      "attrs": { "color": "blue", "label": "2: Bob" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_c3",
+      "top": 240,
+      "left": -60,
+      "attrs": { "color": "yellow", "label": "3: Carol" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_c4",
+      "top": 300,
+      "left": -60,
+      "attrs": { "color": "white", "label": "4: David" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_confirm",
+      "top": 360,
+      "left": -60,
+      "attrs": { "color": "green", "label": "CONFIRM" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_admin",
+      "top": 420,
+      "left": -60,
+      "attrs": { "color": "black", "label": "ADMIN" }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "sw_tamper",
+      "top": 40,
+      "left": 480,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn_tamper",
+      "top": 40,
+      "left": 550,
+      "attrs": { "color": "red", "label": "TAMPER" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_tamper",
+      "top": 90,
+      "left": 480,
+      "attrs": { "value": "1000" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_green",
+      "top": 150,
+      "left": 480,
+      "attrs": { "color": "green", "label": "STATUS" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_red",
+      "top": 220,
+      "left": 480,
+      "attrs": { "color": "red", "label": "ALERT" }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 300,
+      "left": 480,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "lcd:GND", "uno:GND.1", "black", [ "v0" ] ],
+    [ "lcd:VCC", "uno:5V", "red", [ "v0" ] ],
+    [ "lcd:SDA", "uno:A4", "blue", [ "v0" ] ],
+    [ "lcd:SCL", "uno:A5", "yellow", [ "v0" ] ],
+
+    [ "btn_c1:1.l", "uno:GND.2", "black", [ "v0" ] ],
+    [ "btn_c1:2.l", "uno:2", "green", [ "v0" ] ],
+
+    [ "btn_c2:1.l", "uno:GND.2", "black", [ "v0" ] ],
+    [ "btn_c2:2.l", "uno:3", "blue", [ "v0" ] ],
+
+    [ "btn_c3:1.l", "uno:GND.2", "black", [ "v0" ] ],
+    [ "btn_c3:2.l", "uno:4", "orange", [ "v0" ] ],
+
+    [ "btn_c4:1.l", "uno:GND.2", "black", [ "v0" ] ],
+    [ "btn_c4:2.l", "uno:5", "white", [ "v0" ] ],
+
+    [ "btn_confirm:1.l", "uno:GND.2", "black", [ "v0" ] ],
+    [ "btn_confirm:2.l", "uno:6", "purple", [ "v0" ] ],
+
+    [ "btn_admin:1.l", "uno:GND.2", "black", [ "v0" ] ],
+    [ "btn_admin:2.l", "uno:7", "gray", [ "v0" ] ],
+
+    [ "r_tamper:1", "uno:8", "blue", [ "v0" ] ],
+    [ "r_tamper:2", "uno:GND.1", "black", [ "v0" ] ],
+
+    [ "btn_tamper:1.l", "uno:5V", "red", [ "v0" ] ],
+    [ "btn_tamper:2.l", "uno:8", "red", [ "v0" ] ],
+
+    [ "sw_tamper:2", "uno:8", "red", [ "v0" ] ],
+    [ "sw_tamper:3", "uno:5V", "red", [ "v0" ] ],
+
+    [ "led_green:A", "uno:9", "green", [ "v0" ] ],
+    [ "led_green:C", "uno:GND.1", "black", [ "v0" ] ],
+
+    [ "led_red:A", "uno:10", "red", [ "v0" ] ],
+    [ "led_red:C", "uno:GND.1", "black", [ "v0" ] ],
+
+    [ "buzzer:1", "uno:11", "yellow", [ "v0" ] ],
+    [ "buzzer:2", "uno:GND.1", "black", [ "v0" ] ]
+  ]
+}

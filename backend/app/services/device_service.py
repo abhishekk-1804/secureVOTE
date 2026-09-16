@@ -111,6 +111,10 @@ class DeviceService:
                 detail=f"Device {device_id} not found in election {election_id}.",
             )
 
+        # Idempotent status update check
+        if device.status == data.status:
+            return device
+
         # Validate transition
         valid_targets = DeviceService.VALID_STATUS_TRANSITIONS.get(device.status, [])
         if data.status not in valid_targets:
