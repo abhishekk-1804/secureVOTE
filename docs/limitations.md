@@ -39,3 +39,11 @@ In commercial electronic voting systems, voter authentication is frequently coor
 - The Wokwi simulation diagram (`simulation/diagram.json`) and configuration (`simulation/wokwi.toml`) are validated and linted (`wokwi-cli lint`).
 - Executing automated headless simulations via `wokwi-cli` requires an active personal user token (`WOKWI_CLI_TOKEN`) from Wokwi Cloud.
 - For interactive visual inspection and testing, users can load `diagram.json` and `.pio/build/uno/firmware.hex` directly into the web simulator at [wokwi.com](https://wokwi.com).
+
+---
+
+### 6. Dashboard JWT Storage Strategy & Client-Side Weaknesses
+- **Token Delivery**: The FastAPI backend is a pure REST JSON API (`POST /api/auth/login`) that returns signed JWT tokens directly in the response body rather than setting `httpOnly` secure cookies.
+- **Client Storage Mechanism**: The dashboard manages active authentication state in memory via React Context (`AuthContext`), with fallback persistence in browser `localStorage` for prototype convenience across tab navigation and reloads.
+- **Known Prototype Weakness**: In production election and administrative consoles, storing access tokens in `localStorage` exposes them to potential exfiltration if a Cross-Site Scripting (XSS) vulnerability exists. Production systems should enforce secure `httpOnly`, `SameSite=Strict` cookies or dedicated backend session proxies.
+- **Fail-Closed 401 Session Interceptor**: When any API request receives an `HTTP 401 Unauthorized` (such as an expired token or invalid signature), the frontend client immediately clears all in-memory and local session data, wipes cached credentials, and cleanly redirects the operator to `/login` to avoid silently broken or corrupted operational states.
