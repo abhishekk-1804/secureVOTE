@@ -2,7 +2,7 @@
 Database engine and session management for SecureVOTE.
 
 Supports both PostgreSQL (production) and SQLite (development).
-This is a research-oriented prototype â€” the database is not assumed immutable.
+This is a research-oriented prototype Ã¢â‚¬â€ the database is not assumed immutable.
 Integrity comes from append-only audit events + hash chaining + verification,
 not from database row-level protection alone.
 """

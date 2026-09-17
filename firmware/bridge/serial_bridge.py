@@ -1,5 +1,5 @@
 """
-SecureVOTE — Serial Bridge Transport (Phase 2 Addition).
+SecureVOTE - Serial Bridge Transport (Phase 2 Addition).
 
 Bridges serial/UART messages from the physical Arduino or Wokwi simulation
 to the FastAPI backend REST API.

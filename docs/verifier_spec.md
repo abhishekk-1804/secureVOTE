@@ -104,9 +104,9 @@ python backend/standalone_verifier/verifier.py <path_to_export_archive.json> [op
 - `--verbose`: Print detailed step-by-step cryptographic audit logs.
 
 ### Exit Codes:
-- `0`: **SUCCESS** — All verification checks passed with zero discrepancies.
-- `1`: **VERIFICATION FAILURE** — Cryptographic mismatch, reconciliation failure, replay, or tampering detected.
-- `2`: **INVALID INPUT / ERROR** — File not found, invalid JSON format, or unparseable payload.
+- `0`: **SUCCESS**  -  All verification checks passed with zero discrepancies.
+- `1`: **VERIFICATION FAILURE**  -  Cryptographic mismatch, reconciliation failure, replay, or tampering detected.
+- `2`: **INVALID INPUT / ERROR**  -  File not found, invalid JSON format, or unparseable payload.
 
 ---
 

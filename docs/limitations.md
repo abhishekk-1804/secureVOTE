@@ -1,4 +1,4 @@
-# SecureVOTE — System Limitations & Security Boundaries
+# SecureVOTE  -  System Limitations & Security Boundaries
 
 ## Research-Oriented Prototype Notice
 SecureVOTE is a **research-oriented prototype** designed for academic and pedagogical evaluation of embedded voting integrity concepts. It is not an election-ready, nationally deployable, or legally certified system. It demonstrates how cryptographic integrity verification, tamper-evident logging, and defense-in-depth mechanisms can be implemented on low-cost microcontrollers and audited independently.
@@ -47,3 +47,11 @@ In commercial electronic voting systems, voter authentication is frequently coor
 - **Client Storage Mechanism**: The dashboard manages active authentication state in memory via React Context (`AuthContext`), with fallback persistence in browser `localStorage` for prototype convenience across tab navigation and reloads.
 - **Known Prototype Weakness**: In production election and administrative consoles, storing access tokens in `localStorage` exposes them to potential exfiltration if a Cross-Site Scripting (XSS) vulnerability exists. Production systems should enforce secure `httpOnly`, `SameSite=Strict` cookies or dedicated backend session proxies.
 - **Fail-Closed 401 Session Interceptor**: When any API request receives an `HTTP 401 Unauthorized` (such as an expired token or invalid signature), the frontend client immediately clears all in-memory and local session data, wipes cached credentials, and cleanly redirects the operator to `/login` to avoid silently broken or corrupted operational states.
+
+---
+
+### 7. Ballot Secrecy and Anonymity Boundary (Prototype Session Linkage)
+- **Absence of Mathematical Anonymity**: In SecureVOTE, ballot secrecy is **not mathematically anonymous**.
+- **Relational Traceability**: Each recorded `Ballot` table entry maintains an explicit relational foreign key linkage to its parent `VotingSession` (`session_id`), and each `VotingSession` references an authorized voter credential or pseudonym.
+- **Educational Design Decision**: This direct linkage was intentionally preserved in this research prototype to enable straightforward educational demonstration of full audit trails, duplicate credential rejection, and zero-drift tally reconciliation.
+- **Production Election Requirement**: A legally binding election system must mathematically sever the link between a voter's identity and their cast ballot using techniques such as cryptographic mix-nets, homomorphic tallying, or zero-knowledge verifiable shuffles (as seen in Helios or ElectionGuard) rather than direct database relationships.

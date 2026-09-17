@@ -1,4 +1,4 @@
-# SecureVOTE — Firmware Finite State Machine (FSM)
+# SecureVOTE  -  Firmware Finite State Machine (FSM)
 
 ## Overview
 This document specifies the 12-state Finite State Machine implemented in the SecureVOTE C/C++ embedded firmware running on the Arduino Uno (ATmega328P). SecureVOTE is a **research-oriented prototype** demonstrating embedded voting integrity, **defense-in-depth**, and **tamper-evident** monitoring.
@@ -77,7 +77,7 @@ If an administrative pause is triggered (by holding the Admin button for $\ge 20
 - **Implementation**: Stored at EEPROM byte `0x0056` (`EEPROM_PAUSE_ADDR`).
   - Transitioning to `STATE_PAUSED` writes `0x01` to EEPROM.
   - Unpausing writes `0x00` to EEPROM.
-- **Fail-Safe Security Rationale**: If an election official pauses a voting machine for maintenance or polling suspension, an adversary cannot bypass the pause by disconnecting and reconnecting power. During `STATE_BOOT` and `STATE_SELF_TEST`, the firmware inspects the pause flag and boots directly into `STATE_PAUSED`. Only an authenticated administrator with the valid 4-digit PIN can return the machine to `STATE_READY`.
+- **Fail-Safe Security Rationale**: If an election officer pauses a voting machine for maintenance or polling suspension, an adversary cannot bypass the pause by disconnecting and reconnecting power. During `STATE_BOOT` and `STATE_SELF_TEST`, the firmware inspects the pause flag and boots directly into `STATE_PAUSED`. Only an authenticated administrator with the valid 4-digit PIN can return the machine to `STATE_READY`.
 
 ---
 

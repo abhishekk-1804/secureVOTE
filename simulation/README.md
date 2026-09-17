@@ -1,4 +1,4 @@
-# SecureVOTE — Wokwi Simulation Guide
+# SecureVOTE - Wokwi Simulation Guide
 
 This directory contains the hardware simulation schematics and configuration for running SecureVOTE on an Arduino Uno inside the [Wokwi](https://wokwi.com) simulator.
 

@@ -2,7 +2,7 @@
 Election lifecycle service for SecureVOTE.
 
 Manages the election state machine with strict transition validation:
-CREATED â†’ CONFIGURED â†’ LOCKED â†’ OPEN â†’ SUSPENDED/CLOSED â†’ PUBLISHED
+CREATED Ã¢â€ â€™ CONFIGURED Ã¢â€ â€™ LOCKED Ã¢â€ â€™ OPEN Ã¢â€ â€™ SUSPENDED/CLOSED Ã¢â€ â€™ PUBLISHED
 
 Configuration is frozen and hashed at the LOCKED transition. Any attempt
 to modify candidates after locking will produce a CONFIGURATION HASH MISMATCH.
@@ -169,8 +169,8 @@ class ElectionService:
         Change election state with strict transition validation.
 
         Invalid transitions are rejected. Special logic:
-        - CONFIGUREDâ†’LOCKED: computes and stores configuration hash
-        - LOCKEDâ†’OPEN: requires at least 1 ACTIVE device
+        - CONFIGUREDÃ¢â€ â€™LOCKED: computes and stores configuration hash
+        - LOCKEDÃ¢â€ â€™OPEN: requires at least 1 ACTIVE device
         """
         election = await ElectionService.get_election(db, election_id)
         old_state = election.state
@@ -181,7 +181,7 @@ class ElectionService:
             raise HTTPException(
                 status_code=409,
                 detail=(
-                    f"Invalid state transition: {old_state} â†’ {new_state}. "
+                    f"Invalid state transition: {old_state} Ã¢â€ â€™ {new_state}. "
                     f"Valid transitions from {old_state}: {allowed}"
                 ),
             )
@@ -276,8 +276,8 @@ class ElectionService:
         Recompute configuration hash from current candidates and compare
         with the stored hash. Returns (is_valid, stored_hash, computed_hash).
 
-        Any mismatch indicates configuration was modified after locking â€”
-        a CONFIGURATION HASH MISMATCH (spec Â§12 attack #2).
+        Any mismatch indicates configuration was modified after locking Ã¢â‚¬â€
+        a CONFIGURATION HASH MISMATCH (spec Ã‚Â§12 attack #2).
         """
         election = await ElectionService.get_election(db, election_id)
         candidates = await ElectionService.get_candidates(db, election_id)

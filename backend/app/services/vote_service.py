@@ -5,7 +5,7 @@ Handles voting session authorization and ballot recording with strict
 integrity checks: duplicate-session prevention, replay protection,
 and deterministic ballot hashing.
 
-Note: voter anonymity is NOT preserved in this prototype â€” session
+Note: voter anonymity is NOT preserved in this prototype Ã¢â‚¬â€ session
 linkage exists for educational demonstration of audit trails.
 """
 
@@ -39,7 +39,7 @@ class VoteService:
         Authorize a new voting session.
 
         Rejects duplicate sessions for the same voter_credential+election
-        (spec Â§12 attack #3).
+        (spec Ã‚Â§12 attack #3).
         """
         # Verify election exists and is OPEN
         election = await db.get(Election, election_id)

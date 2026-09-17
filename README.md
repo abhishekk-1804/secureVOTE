@@ -1,6 +1,6 @@
-# SecureVOTE — Electronic Voting System Security Prototype
+# SecureVOTE - Electronic Voting System Security Prototype
 
-An educational and research-oriented electronic voting security prototype demonstrating defense-in-depth, hardware tamper detection, tamper-evident audit trails, asymmetric cryptographic signing, external ledger anchoring, independent offline verification, advisory anomaly detection, and keyed identity abstraction.
+An educational and research-oriented electronic voting security prototype demonstrating defense-in-depth, hardware tamper detection, tamper-evident audit trails, asymmetric cryptographic signing, local/external audit-root anchoring abstraction, independent offline verification, advisory anomaly detection, and keyed identity abstraction.
 
 > [!NOTE]
 > **Research-Oriented Prototype Notice**: SecureVOTE is an educational and academic research prototype. It is **not** an election-ready, nationally deployable, or legally certified voting system. It illustrates how cryptographic verification, hardware state machines, and defense-in-depth principles can be realized on resource-constrained microcontrollers and audited independently.
@@ -166,7 +166,7 @@ Located in `backend/standalone_verifier/verifier.py`:
   8. `audit_chain`: Full link-by-link cryptographic SHA-256 verification from genesis.
   9. `audit_root`: Recomputation of canonical SHA-256 Merkle root.
   10. `manifest`: Hash verification of result manifest against recounted totals.
-  11. `signature`: Ed25519 digital signature verification using official public key.
+  11. `signature`: Ed25519 digital signature verification using published SecureVOTE public key.
   12. `anchor`: Commitment receipt matching against recomputed audit root.
 
 ---
@@ -200,7 +200,7 @@ Twelve automated adversarial tests prove that the defense-in-depth architecture 
 - PlatformIO Core (CLI)
 - MSYS2 / UCRT64 GCC toolchain (for native firmware unit tests on Windows)
 
-### 1. Backend REST API
+### 1. Backend REST API (FastAPI)
 ```powershell
 cd D:\secureVOTE\backend
 python -m venv venv
@@ -210,17 +210,23 @@ pip install -r requirements.txt
 # Run backend development server
 uvicorn app.main:app --reload --port 8000
 ```
-API Documentation is accessible at `http://localhost:8000/docs`.
+Interactive OpenAPI documentation is available at `http://localhost:8000/docs` (45 REST endpoints).
 
-### 2. Next.js Audit & Operations Dashboard
+### 2. Next.js 14 Civic Ecosystem & Operations Dashboard
 ```powershell
 cd D:\secureVOTE\dashboard
 npm install
 npm run dev
 ```
-Dashboard is accessible at `http://localhost:3000`.
+Accessible at `http://localhost:3000`:
+- **Landing Gateway**: `http://localhost:3000/`
+- **Citizen / Voter Portal**: `http://localhost:3000/voter` (Eligibility, Registration, Roll, Polling Station Finder, Complaints, Digital Voter Card, Voting Guide)
+- **Digital EVM Simulator**: `http://localhost:3000/evm` (Interactive Terminal, Hardware LCD, Tactile Candidate Faceplate, VVPAT Preview)
+- **Public Transparency Center**: `http://localhost:3000/transparency` (Safe aggregate telemetry, published candidate rosters, manifest proofs)
+- **Independent Machine Verifier**: `http://localhost:3000/verify` (Browser-based zero-trust archive verification with drag-and-drop)
+- **Officer Command Console**: `http://localhost:3000/command` and `http://localhost:3000/election/*` (Setup, Polling Operations, Counting Center, Reconciliation, Manifest Signing, Audit Explorer, Security Center, Attack Demonstration Sandbox)
 
-### 3. Serial Bridge
+### 3. Serial Bridge (Physical Hardware Link)
 ```powershell
 cd D:\secureVOTE\firmware\bridge
 python serial_bridge.py --port COM3 --baud 9600 --backend http://localhost:8000 --election EV-2026-001
@@ -238,53 +244,68 @@ python backend/standalone_verifier/verifier.py election_export.json
 
 All test suites execute deterministically without external network or service dependencies:
 
-### 1. Backend Pytest Suite (80 Tests)
+### 1. Full Backend Test Suite (88 Tests)
 ```powershell
 cd D:\secureVOTE\backend
 .\venv\Scripts\pytest.exe tests/ -v
 ```
-*Result*: **80 passed** (including integration, multi-device, RFID, signing, anchoring, anomaly, verifier, attack, and fragmented NDJSON tests).
+*Result*: **88 passed** across 15 test files.
 
-### 2. Firmware Native Unit Tests (17 Tests)
+### 2. Firmware Native Test Suite (17 Tests)
 ```powershell
+cd D:\secureVOTE\firmware
 $env:PATH = "D:\DevTools\ucrt64\bin;" + $env:PATH
-cd D:\secureVOTE\firmware
-.\..\backend\venv\Scripts\pio.exe test -e native
+pio test -e native
 ```
-*Result*: **17 passed** (FSM transitions, tamper latch, pause flag, recovery flow, PIN authentication).
+*Result*: **17 passed** across all state-machine, voting lifecycle, recovery, and persistence suites.
 
-### 3. Firmware Arduino Uno Compilation
+### 3. Firmware Arduino Uno Production Build
 ```powershell
 cd D:\secureVOTE\firmware
-.\..\backend\venv\Scripts\pio.exe run -e uno
+pio run -e uno
 ```
-*Result*: **SUCCESS** (RAM: 53.6% used [1097 / 2048 B], Flash: 45.8% used [14770 / 32256 B]).
+*Result*: **SUCCESS** (RAM: 53.6%, Flash: 45.8% on ATmega328P).
 
-### 4. Dashboard Vitest Suite (14 Tests)
+### 4. Dashboard Vitest Unit Suite (28 Tests)
 ```powershell
 cd D:\secureVOTE\dashboard
 npm test -- --run
 ```
-*Result*: **14 passed** across 5 test files.
+*Result*: **28 passed** across 7 test files (including error formatting and voter eligibility).
 
 ### 5. Dashboard Next.js Production Build
 ```powershell
 cd D:\secureVOTE\dashboard
 npm run build
 ```
-*Result*: **SUCCESS** (10 static pages compiled without errors).
+*Result*: **SUCCESS** (41 static/dynamic pages compiled cleanly without errors).
+
+### 6. Standalone Verifier Test Suite (12 Tests)
+```powershell
+cd D:\secureVOTE\backend
+.\venv\Scripts\pytest.exe tests/test_standalone_verifier.py -v
+```
+*Result*: **12 passed** (validates 100% database/ORM disconnection and all tamper-detection assertions).
+
+### 7. Attack Demonstration Suite (12 Tests)
+```powershell
+cd D:\secureVOTE\backend
+.\venv\Scripts\pytest.exe tests/test_attacks.py -v
+```
+*Result*: **12 passed** across all 12 documented attack vectors.
 
 ---
 
 ## Architectural Boundaries & Limitations
 
-1. **Plaintext UART Link**: microcontrollers like the ATmega328P lack hardware cryptographic acceleration. Serial communications over UART (9600 baud) are plaintext JSON strings. Integrity and replay are governed by sequence counters and hash-chain verification, not wire-level TLS.
+1. **Plaintext UART Link**: Microcontrollers like the ATmega328P lack hardware cryptographic acceleration. Serial communications over UART (9600 baud) are plaintext JSON strings. Integrity and replay are governed by sequence counters and hash-chain verification, not wire-level TLS.
 2. **Demo-Mode Credentials**: For bench demonstrations, `--demo-mode` creates synthetic test voter tokens tagged as `[DEMO-MODE]`. Production deployments would interface with dedicated hardware identity providers.
 3. **Environment-Blocked External Integrations**:
    - **Docker Host Daemon**: `ENVIRONMENT-BLOCKED` (Host daemon inactive).
    - **Wokwi CLI Automated Runner**: `ENVIRONMENT-BLOCKED` (Requires `WOKWI_CLI_TOKEN`).
    - **Public Blockchain Ledger**: `NOT CONFIGURED` (`LocalAnchorProvider` active as default).
-4. **Research Prototype Notice**: SecureVOTE demonstrates verification architectures; it does not replace voter-verified paper audit trails (VVPAT) or national legal certification.
+4. **Ballot Secrecy vs. Relational Traceability**: In this prototype, ballot secrecy is **not mathematically anonymous**. Each `Ballot` record maintains an explicit relational foreign-key linkage to its `VotingSession` (`session_id`) and associated credential. This was intentionally designed to enable educational demonstration of end-to-end audit tracing, duplicate vote prevention, and exact reconciliation. Real-world production systems require cryptographic mix-nets or homomorphic tallying to decouple voter identity from cast ballots.
+5. **Research Prototype Notice**: SecureVOTE demonstrates verification architectures; it does not replace voter-verified paper audit trails (VVPAT) or national legal certification.
 
 ---
 

@@ -1,18 +1,18 @@
-# SecureVOTE — WebSocket Protocol & Real-Time Event Architecture
+# SecureVOTE  -  WebSocket Protocol & Real-Time Event Architecture
 
 ## 1. Overview & Trust Boundary
 
 The SecureVOTE dashboard requires real-time observability of election events without compromising the security boundaries established in the core architecture:
 ```
-[ Hardware EVMs ] ──Serial──> [ Bridge ] ──REST──> [ Backend API ]
-                                                          │
-                                         ┌────────────────┴────────────────┐
-                                         │ (Broadcaster)                   │
-                                         ▼                                 ▼
+[ Hardware EVMs ] â”€â”€Serialâ”€â”€> [ Bridge ] â”€â”€RESTâ”€â”€> [ Backend API ]
+                                                          â”‚
+                                         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                                         â”‚ (Broadcaster)                   â”‚
+                                         â–¼                                 â–¼
                              [ WebSocket Stream ]               [ REST Poll Fallback ]
-                                         │                                 │
-                                         └────────────────┬────────────────┘
-                                                          ▼
+                                         â”‚                                 â”‚
+                                         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                                                          â–¼
                                               [ Next.js Dashboard ]
 ```
 

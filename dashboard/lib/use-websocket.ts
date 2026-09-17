@@ -128,7 +128,7 @@ export function useWebSocketElection({
         }, 10000);
       };
     } catch {
-      // Failed to acquire ticket or connect — fall back to polling immediately
+      // Failed to acquire ticket or connect - fall back to polling immediately
       startPolling();
     }
   }, [token, electionId, onEvent, startPolling, stopPolling]);

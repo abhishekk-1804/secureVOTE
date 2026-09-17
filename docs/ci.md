@@ -1,4 +1,4 @@
-# SecureVOTE — CI/CD Pipeline & Automated Verification Strategy
+# SecureVOTE  -  CI/CD Pipeline & Automated Verification Strategy
 
 ## 1. Overview
 

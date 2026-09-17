@@ -2,8 +2,8 @@
 Deterministic Demo Scenario Runner for SecureVOTE (Section 11).
 
 Election: EV-2026-001 "SecureVOTE Demo Election 2026"
-Candidates: C001â€“C004 (fictional parties, symbols Aâ€“D)
-Devices: EVM-001â€¦004
+Candidates: C001Ã¢â‚¬â€œC004 (fictional parties, symbols AÃ¢â‚¬â€œD)
+Devices: EVM-001Ã¢â‚¬Â¦004
 Ballots: 1000 deterministic ballots across 4 devices (no random seeds)
 
 Full Sequence:
@@ -184,7 +184,7 @@ async def run_deterministic_demo(total_votes: int = 1000, verbose: bool = True):
         # Publish
         await client.patch(
             f"/api/elections/{election_id}/state",
-            json={"new_state": "PUBLISHED", "reason": "Results certified"},
+            json={"new_state": "PUBLISHED", "reason": "Results verified and published"},
             headers=headers,
         )
 

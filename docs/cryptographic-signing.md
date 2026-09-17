@@ -1,4 +1,4 @@
-# SecureVOTE — Cryptographic Artifact Signing Specification
+# SecureVOTE  -  Cryptographic Artifact Signing Specification
 
 ## Overview
 SecureVOTE employs asymmetric digital signatures using **Ed25519** (Edwards-curve Digital Signature Algorithm over Curve25519) to provide non-repudiation, tamper-evidence, and verifiable provenance for authoritative election artifacts.
@@ -47,7 +47,7 @@ To prevent serialization malleability across different JSON parsers, platforms, 
 1. **Sort Keys**: JSON object keys are strictly lexicographically sorted (`sort_keys=True`).
 2. **Compact Separators**: No whitespace after delimiters (`separators=(',', ':')`).
 3. **Encoding**: UTF-8 bytes without BOM.
-4. **Data Minimization**: Signed payloads contain only cryptographic commitments and metadata—never voter credentials, raw RFID UIDs, or unneeded plaintext.
+4. **Data Minimization**: Signed payloads contain only cryptographic commitments and metadata - never voter credentials, raw RFID UIDs, or unneeded plaintext.
 
 ---
 
@@ -80,5 +80,5 @@ Public keys and fingerprints are exposed via the public endpoint `GET /api/signi
 ---
 
 ## 5. Security Limitations & Trust Boundary
-1. **Server Trust Boundary**: An Ed25519 signature confirms that the election authority server certified this specific result manifest. It does not prevent a compromised server from signing false tallies if the database itself was altered prior to manifest calculation. To detect server compromise, external auditors must independently recompute tallies using the standalone verifier on exported archives.
+1. **Server Trust Boundary**: An Ed25519 signature confirms that the election authority server signed this specific result manifest. It does not prevent a compromised server from signing false tallies if the database itself was altered prior to manifest calculation. To detect server compromise, external auditors must independently recompute tallies using the standalone verifier on exported archives.
 2. **Client Hardware Boundary**: The signature does not authenticate the physical EVM unit; device integrity relies on the authenticated device sequence counter and physical tamper latch.

@@ -1,4 +1,4 @@
-# SecureVOTE — Phase 5 Security Review & Defense-in-Depth Analysis
+# SecureVOTE  -  Phase 5 Security Review & Defense-in-Depth Analysis
 
 ## 1. Executive Summary
 
@@ -40,7 +40,7 @@ Every requirement and all four mandatory amendments have been implemented and va
 
 ---
 
-## 3. Defense-in-Depth Attack Demonstration Matrix (Attacks 1–12)
+## 3. Defense-in-Depth Attack Demonstration Matrix (Attacks 1â€“12)
 
 | # | Threat Vector | Mitigation Mechanism | Verification Test | Expected Detection Result | Status |
 |---|---------------|----------------------|-------------------|---------------------------|:------:|

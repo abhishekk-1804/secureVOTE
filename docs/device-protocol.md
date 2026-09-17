@@ -1,4 +1,4 @@
-# SecureVOTE — Device Communication Protocol
+# SecureVOTE  -  Device Communication Protocol
 
 ## Overview
 The SecureVOTE embedded firmware communicates with upstream collectors and the backend API using single-line JSON messages transmitted over UART serial at **9600 baud, 8-N-1** (8 data bits, no parity, 1 stop bit).

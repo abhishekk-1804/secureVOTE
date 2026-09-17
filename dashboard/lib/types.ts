@@ -359,3 +359,89 @@ export interface IndependentVerificationResult {
     reconciliation_drift: number;
   };
 }
+
+
+// Voter types
+export interface VoterResponse {
+  id: string;
+  election_id: string;
+  voter_id_number: string;
+  name: string;
+  date_of_birth: string;
+  constituency: string;
+  polling_station_id: string | null;
+  eligibility_status: string;
+  registration_status: string;
+  has_voted: boolean;
+  registered_at: string;
+}
+
+export interface EligibilityCheckResponse {
+  status: 'ELIGIBLE' | 'NOT_ELIGIBLE' | 'NEEDS_REVIEW';
+  reasons: string[];
+  voter_id: string | null;
+  notice: string;
+}
+
+// Polling Station types
+export interface PollingStationResponse {
+  id: string;
+  election_id: string;
+  station_code: string;
+  name: string;
+  constituency: string;
+  location: string;
+  assigned_devices: number;
+  registered_voters: number;
+  votes_cast: number;
+  status: string;
+  officer_name: string | null;
+  created_at: string;
+}
+
+// Complaint types
+export interface ComplaintResponse {
+  id: string;
+  election_id: string | null;
+  reference_number: string;
+  category: string;
+  description: string;
+  complainant_name: string;
+  complainant_contact: string | null;
+  status: string;
+  assigned_officer: string | null;
+  resolution_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Simulation types
+export interface SimulationResponse {
+  election_id: string;
+  preset: string;
+  ballots_generated: number;
+  devices_created: number;
+  polling_stations_created: number;
+  voters_registered: number;
+  candidates_created: number;
+  audit_entries: number;
+  duration_seconds: number;
+  status: string;
+}
+
+// Transparency types
+export interface TransparencyOverview {
+  election_id: string;
+  election_name: string;
+  state: string;
+  total_ballots: number;
+  device_count: number;
+  polling_station_count: number;
+  candidate_count: number;
+  registered_voters: number;
+  turnout_percentage: number;
+  audit_chain_status: string;
+  reconciliation_status: string;
+  manifest_status: string;
+  notice: string;
+}

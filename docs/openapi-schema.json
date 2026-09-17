@@ -1527,6 +1527,922 @@
         }
       }
     },
+    "/api/elections/{election_id}/voters": {
+      "post": {
+        "tags": [
+          "Voters"
+        ],
+        "summary": "Register Voter",
+        "operationId": "register_voter_api_elections__election_id__voters_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoterCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoterResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Voters"
+        ],
+        "summary": "List Voters",
+        "operationId": "list_voters_api_elections__election_id__voters_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VoterResponse"
+                  },
+                  "title": "Response List Voters Api Elections  Election Id  Voters Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/elections/{election_id}/voters/{voter_id}": {
+      "get": {
+        "tags": [
+          "Voters"
+        ],
+        "summary": "Get Voter",
+        "operationId": "get_voter_api_elections__election_id__voters__voter_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          },
+          {
+            "name": "voter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Voter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoterResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/elections/{election_id}/eligibility": {
+      "post": {
+        "tags": [
+          "Voters"
+        ],
+        "summary": "Check Eligibility",
+        "operationId": "check_eligibility_api_elections__election_id__eligibility_post",
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EligibilityCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EligibilityCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/elections/{election_id}/voter-lookup": {
+      "get": {
+        "tags": [
+          "Voters"
+        ],
+        "summary": "Lookup Voter",
+        "operationId": "lookup_voter_api_elections__election_id__voter_lookup_get",
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          },
+          {
+            "name": "voter_id_number",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Voter Id Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoterResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/complaints": {
+      "get": {
+        "tags": [
+          "Complaints"
+        ],
+        "summary": "List Complaints",
+        "operationId": "list_complaints_api_complaints_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ComplaintResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Complaints Api Complaints Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Complaints"
+        ],
+        "summary": "Submit Complaint",
+        "operationId": "submit_complaint_api_complaints_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplaintCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplaintResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/complaints/{complaint_id}": {
+      "get": {
+        "tags": [
+          "Complaints"
+        ],
+        "summary": "Get Complaint",
+        "operationId": "get_complaint_api_complaints__complaint_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "complaint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Complaint Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplaintResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/complaints/track/{reference_number}": {
+      "get": {
+        "tags": [
+          "Complaints"
+        ],
+        "summary": "Track Complaint",
+        "operationId": "track_complaint_api_complaints_track__reference_number__get",
+        "parameters": [
+          {
+            "name": "reference_number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Reference Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplaintResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/complaints/{complaint_id}/status": {
+      "patch": {
+        "tags": [
+          "Complaints"
+        ],
+        "summary": "Update Complaint Status",
+        "operationId": "update_complaint_status_api_complaints__complaint_id__status_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "complaint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Complaint Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplaintStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplaintResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/elections/{election_id}/polling-stations": {
+      "post": {
+        "tags": [
+          "Polling Stations"
+        ],
+        "summary": "Create Polling Station",
+        "operationId": "create_polling_station_api_elections__election_id__polling_stations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollingStationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PollingStationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Polling Stations"
+        ],
+        "summary": "List Polling Stations",
+        "operationId": "list_polling_stations_api_elections__election_id__polling_stations_get",
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PollingStationResponse"
+                  },
+                  "title": "Response List Polling Stations Api Elections  Election Id  Polling Stations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/elections/{election_id}/polling-stations/{station_id}": {
+      "get": {
+        "tags": [
+          "Polling Stations"
+        ],
+        "summary": "Get Polling Station",
+        "operationId": "get_polling_station_api_elections__election_id__polling_stations__station_id__get",
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          },
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Station Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PollingStationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/elections/{election_id}/polling-stations/{station_id}/status": {
+      "patch": {
+        "tags": [
+          "Polling Stations"
+        ],
+        "summary": "Update Polling Station Status",
+        "operationId": "update_polling_station_status_api_elections__election_id__polling_stations__station_id__status_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          },
+          {
+            "name": "station_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Station Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollingStationStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PollingStationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulation/presets": {
+      "get": {
+        "tags": [
+          "Simulation"
+        ],
+        "summary": "Get Presets",
+        "operationId": "get_presets_api_simulation_presets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulation/run": {
+      "post": {
+        "tags": [
+          "Simulation"
+        ],
+        "summary": "Run Simulation",
+        "operationId": "run_simulation_api_simulation_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/transparency/elections": {
+      "get": {
+        "tags": [
+          "Transparency"
+        ],
+        "summary": "List Transparency Elections",
+        "operationId": "list_transparency_elections_api_transparency_elections_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TransparencyOverview"
+                  },
+                  "type": "array",
+                  "title": "Response List Transparency Elections Api Transparency Elections Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transparency/elections/{election_id}": {
+      "get": {
+        "tags": [
+          "Transparency"
+        ],
+        "summary": "Get Transparency Overview",
+        "operationId": "get_transparency_overview_api_transparency_elections__election_id__get",
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransparencyOverview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transparency/elections/{election_id}/candidates": {
+      "get": {
+        "tags": [
+          "Transparency"
+        ],
+        "summary": "Get Transparency Candidates",
+        "operationId": "get_transparency_candidates_api_transparency_elections__election_id__candidates_get",
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidateResponse"
+                  },
+                  "title": "Response Get Transparency Candidates Api Transparency Elections  Election Id  Candidates Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transparency/elections/{election_id}/results": {
+      "get": {
+        "tags": [
+          "Transparency"
+        ],
+        "summary": "Get Transparency Results",
+        "operationId": "get_transparency_results_api_transparency_elections__election_id__results_get",
+        "parameters": [
+          {
+            "name": "election_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Election Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "summary": "Health Check",
@@ -2223,6 +3139,190 @@
         ],
         "title": "CandidateResult"
       },
+      "ComplaintCreate": {
+        "properties": {
+          "election_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Election Id"
+          },
+          "category": {
+            "type": "string",
+            "pattern": "^(VOTER_REGISTRATION|POLLING_STATION|EVM|VOTING_ISSUE|ACCESSIBILITY|ELECTION_PROCESS|CANDIDATE_PARTY|TECHNICAL|OTHER)$",
+            "title": "Category"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Description"
+          },
+          "complainant_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Complainant Name"
+          },
+          "complainant_contact": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complainant Contact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "description",
+          "complainant_name"
+        ],
+        "title": "ComplaintCreate"
+      },
+      "ComplaintResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "election_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Election Id"
+          },
+          "reference_number": {
+            "type": "string",
+            "title": "Reference Number"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "complainant_name": {
+            "type": "string",
+            "title": "Complainant Name"
+          },
+          "complainant_contact": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complainant Contact"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "assigned_officer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Officer"
+          },
+          "resolution_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Notes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "election_id",
+          "reference_number",
+          "category",
+          "description",
+          "complainant_name",
+          "complainant_contact",
+          "status",
+          "assigned_officer",
+          "resolution_notes",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ComplaintResponse"
+      },
+      "ComplaintStatusUpdate": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "pattern": "^(RECEIVED|ASSIGNED|UNDER_REVIEW|RESOLVED|CLOSED)$",
+            "title": "Status"
+          },
+          "assigned_officer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Officer"
+          },
+          "resolution_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ComplaintStatusUpdate"
+      },
       "DeviceExportItem": {
         "properties": {
           "id": {
@@ -2836,6 +3936,69 @@
         ],
         "title": "ElectionStateChange"
       },
+      "EligibilityCheckRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "title": "Name"
+          },
+          "date_of_birth": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Date Of Birth"
+          },
+          "constituency": {
+            "type": "string",
+            "minLength": 2,
+            "title": "Constituency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "date_of_birth",
+          "constituency"
+        ],
+        "title": "EligibilityCheckRequest"
+      },
+      "EligibilityCheckResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "voter_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voter Id"
+          },
+          "notice": {
+            "type": "string",
+            "title": "Notice",
+            "default": "SIMULATED ELIGIBILITY CHECK - NOT A REAL GOVERNMENT SERVICE"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "reasons"
+        ],
+        "title": "EligibilityCheckResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2866,6 +4029,141 @@
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "PollingStationCreate": {
+        "properties": {
+          "station_code": {
+            "type": "string",
+            "pattern": "^PS-\\d{3}$",
+            "title": "Station Code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Name"
+          },
+          "constituency": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Constituency"
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Location"
+          },
+          "officer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Officer Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "station_code",
+          "name",
+          "constituency",
+          "location"
+        ],
+        "title": "PollingStationCreate"
+      },
+      "PollingStationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "election_id": {
+            "type": "string",
+            "title": "Election Id"
+          },
+          "station_code": {
+            "type": "string",
+            "title": "Station Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "constituency": {
+            "type": "string",
+            "title": "Constituency"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "assigned_devices": {
+            "type": "integer",
+            "title": "Assigned Devices"
+          },
+          "registered_voters": {
+            "type": "integer",
+            "title": "Registered Voters"
+          },
+          "votes_cast": {
+            "type": "integer",
+            "title": "Votes Cast"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "officer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Officer Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "election_id",
+          "station_code",
+          "name",
+          "constituency",
+          "location",
+          "assigned_devices",
+          "registered_voters",
+          "votes_cast",
+          "status",
+          "officer_name",
+          "created_at"
+        ],
+        "title": "PollingStationResponse"
+      },
+      "PollingStationStatusUpdate": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "PollingStationStatusUpdate"
       },
       "PublicKeyInfoResponse": {
         "properties": {
@@ -3257,6 +4555,81 @@
         ],
         "title": "SignedManifestResponse"
       },
+      "SimulationRequest": {
+        "properties": {
+          "preset": {
+            "type": "string",
+            "pattern": "^(DEMO_1000|DEMO_10000|DEMO_100000)$",
+            "title": "Preset",
+            "default": "DEMO_1000"
+          },
+          "election_name": {
+            "type": "string",
+            "title": "Election Name",
+            "default": "SecureVOTE Demo Election 2026"
+          }
+        },
+        "type": "object",
+        "title": "SimulationRequest"
+      },
+      "SimulationResponse": {
+        "properties": {
+          "election_id": {
+            "type": "string",
+            "title": "Election Id"
+          },
+          "preset": {
+            "type": "string",
+            "title": "Preset"
+          },
+          "ballots_generated": {
+            "type": "integer",
+            "title": "Ballots Generated"
+          },
+          "devices_created": {
+            "type": "integer",
+            "title": "Devices Created"
+          },
+          "polling_stations_created": {
+            "type": "integer",
+            "title": "Polling Stations Created"
+          },
+          "voters_registered": {
+            "type": "integer",
+            "title": "Voters Registered"
+          },
+          "candidates_created": {
+            "type": "integer",
+            "title": "Candidates Created"
+          },
+          "audit_entries": {
+            "type": "integer",
+            "title": "Audit Entries"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "title": "Duration Seconds"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "election_id",
+          "preset",
+          "ballots_generated",
+          "devices_created",
+          "polling_stations_created",
+          "voters_registered",
+          "candidates_created",
+          "audit_entries",
+          "duration_seconds",
+          "status"
+        ],
+        "title": "SimulationResponse"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -3274,6 +4647,79 @@
           "access_token"
         ],
         "title": "TokenResponse"
+      },
+      "TransparencyOverview": {
+        "properties": {
+          "election_id": {
+            "type": "string",
+            "title": "Election Id"
+          },
+          "election_name": {
+            "type": "string",
+            "title": "Election Name"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "total_ballots": {
+            "type": "integer",
+            "title": "Total Ballots"
+          },
+          "device_count": {
+            "type": "integer",
+            "title": "Device Count"
+          },
+          "polling_station_count": {
+            "type": "integer",
+            "title": "Polling Station Count"
+          },
+          "candidate_count": {
+            "type": "integer",
+            "title": "Candidate Count"
+          },
+          "registered_voters": {
+            "type": "integer",
+            "title": "Registered Voters"
+          },
+          "turnout_percentage": {
+            "type": "number",
+            "title": "Turnout Percentage"
+          },
+          "audit_chain_status": {
+            "type": "string",
+            "title": "Audit Chain Status"
+          },
+          "reconciliation_status": {
+            "type": "string",
+            "title": "Reconciliation Status"
+          },
+          "manifest_status": {
+            "type": "string",
+            "title": "Manifest Status"
+          },
+          "notice": {
+            "type": "string",
+            "title": "Notice",
+            "default": "Aggregate data only - no individual voter information disclosed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "election_id",
+          "election_name",
+          "state",
+          "total_ballots",
+          "device_count",
+          "polling_station_count",
+          "candidate_count",
+          "registered_voters",
+          "turnout_percentage",
+          "audit_chain_status",
+          "reconciliation_status",
+          "manifest_status"
+        ],
+        "title": "TransparencyOverview"
       },
       "UserCreate": {
         "properties": {
@@ -3613,6 +5059,105 @@
           "recorded_at"
         ],
         "title": "VoteResponse"
+      },
+      "VoterCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "date_of_birth": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Date Of Birth"
+          },
+          "constituency": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Constituency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "date_of_birth",
+          "constituency"
+        ],
+        "title": "VoterCreate"
+      },
+      "VoterResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "election_id": {
+            "type": "string",
+            "title": "Election Id"
+          },
+          "voter_id_number": {
+            "type": "string",
+            "title": "Voter Id Number"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "date_of_birth": {
+            "type": "string",
+            "title": "Date Of Birth"
+          },
+          "constituency": {
+            "type": "string",
+            "title": "Constituency"
+          },
+          "polling_station_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Polling Station Id"
+          },
+          "eligibility_status": {
+            "type": "string",
+            "title": "Eligibility Status"
+          },
+          "registration_status": {
+            "type": "string",
+            "title": "Registration Status"
+          },
+          "has_voted": {
+            "type": "boolean",
+            "title": "Has Voted"
+          },
+          "registered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Registered At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "election_id",
+          "voter_id_number",
+          "name",
+          "date_of_birth",
+          "constituency",
+          "polling_station_id",
+          "eligibility_status",
+          "registration_status",
+          "has_voted",
+          "registered_at"
+        ],
+        "title": "VoterResponse"
       },
       "WsTicketRequest": {
         "properties": {

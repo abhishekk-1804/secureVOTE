@@ -478,3 +478,134 @@ class RFIDTapResponse(BaseModel):
     device_id: str
     session_id: str | None = None
     notice: str = "RFID AUTHENTICATION != VOTER ELIGIBILITY"
+
+
+# ===========================================================================
+# Voter schemas
+# ===========================================================================
+
+class VoterCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    date_of_birth: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    constituency: str = Field(..., min_length=2, max_length=100)
+
+class VoterResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    election_id: str
+    voter_id_number: str
+    name: str
+    date_of_birth: str
+    constituency: str
+    polling_station_id: str | None
+    eligibility_status: str
+    registration_status: str
+    has_voted: bool
+    registered_at: datetime
+
+class EligibilityCheckRequest(BaseModel):
+    name: str = Field(..., min_length=2)
+    date_of_birth: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    constituency: str = Field(..., min_length=2)
+
+class EligibilityCheckResponse(BaseModel):
+    status: str  # ELIGIBLE, NOT_ELIGIBLE, NEEDS_REVIEW
+    reasons: list[str]
+    voter_id: str | None = None
+    notice: str = "SIMULATED ELIGIBILITY CHECK - NOT A REAL GOVERNMENT SERVICE"
+
+# ===========================================================================
+# PollingStation schemas
+# ===========================================================================
+
+class PollingStationCreate(BaseModel):
+    station_code: str = Field(..., pattern=r"^PS-\d{3}$")
+    name: str = Field(..., min_length=3, max_length=255)
+    constituency: str = Field(..., min_length=2, max_length=100)
+    location: str = Field(..., min_length=3, max_length=255)
+    officer_name: str | None = None
+
+class PollingStationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    election_id: str
+    station_code: str
+    name: str
+    constituency: str
+    location: str
+    assigned_devices: int
+    registered_voters: int
+    votes_cast: int
+    status: str
+    officer_name: str | None
+    created_at: datetime
+
+# ===========================================================================
+# Complaint schemas
+# ===========================================================================
+
+class ComplaintCreate(BaseModel):
+    election_id: str | None = None
+    category: str = Field(..., pattern="^(VOTER_REGISTRATION|POLLING_STATION|EVM|VOTING_ISSUE|ACCESSIBILITY|ELECTION_PROCESS|CANDIDATE_PARTY|TECHNICAL|OTHER)$")
+    description: str = Field(..., min_length=10, max_length=2000)
+    complainant_name: str = Field(..., min_length=2, max_length=255)
+    complainant_contact: str | None = None
+
+class ComplaintResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    election_id: str | None
+    reference_number: str
+    category: str
+    description: str
+    complainant_name: str
+    complainant_contact: str | None
+    status: str
+    assigned_officer: str | None
+    resolution_notes: str | None
+    created_at: datetime
+    updated_at: datetime
+
+class ComplaintStatusUpdate(BaseModel):
+    status: str = Field(..., pattern="^(RECEIVED|ASSIGNED|UNDER_REVIEW|RESOLVED|CLOSED)$")
+    assigned_officer: str | None = None
+    resolution_notes: str | None = None
+
+# ===========================================================================
+# Simulation schemas
+# ===========================================================================
+
+class SimulationRequest(BaseModel):
+    preset: str = Field(default="DEMO_1000", pattern="^(DEMO_1000|DEMO_10000|DEMO_100000)$")
+    election_name: str = Field(default="SecureVOTE Demo Election 2026")
+
+class SimulationResponse(BaseModel):
+    election_id: str
+    preset: str
+    ballots_generated: int
+    devices_created: int
+    polling_stations_created: int
+    voters_registered: int
+    candidates_created: int
+    audit_entries: int
+    duration_seconds: float
+    status: str
+
+# ===========================================================================
+# Transparency schemas
+# ===========================================================================
+
+class TransparencyOverview(BaseModel):
+    election_id: str
+    election_name: str
+    state: str
+    total_ballots: int
+    device_count: int
+    polling_station_count: int
+    candidate_count: int
+    registered_voters: int
+    turnout_percentage: float
+    audit_chain_status: str
+    reconciliation_status: str
+    manifest_status: str
+    notice: str = "Aggregate data only - no individual voter information disclosed"

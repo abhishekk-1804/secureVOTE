@@ -1,4 +1,4 @@
-# SecureVOTE — External Audit-Root Anchoring Specification
+# SecureVOTE  -  External Audit-Root Anchoring Specification
 
 ## Overview
 In electronic voting architectures, an append-only cryptographic hash chain protects the audit log against retroactive tampering. However, if the entire server database is compromised, an attacker could potentially regenerate an alternate hash chain starting from an early point in time.

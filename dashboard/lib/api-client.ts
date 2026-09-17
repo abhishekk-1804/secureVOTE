@@ -27,6 +27,13 @@ import {
   AdvisoryFindingsResponse,
   RFIDTapRequest,
   RFIDTapResponse,
+  VoterResponse,
+  EligibilityCheckResponse,
+  PollingStationResponse,
+  ComplaintResponse,
+  SimulationResponse,
+  TransparencyOverview,
+  SessionResponse,
 } from "./types";
 
 
@@ -120,7 +127,7 @@ export const api = {
     return res.json();
   },
 
-  async getMe(token: string): Promise<UserResponse> {
+  async getMe(token?: string | null): Promise<UserResponse> {
     return request<UserResponse>("/api/auth/me", {}, token);
   },
 
@@ -144,7 +151,7 @@ export const api = {
   async updateElectionState(
     electionId: string,
     state: ElectionState,
-    token: string
+    token?: string | null
   ): Promise<ElectionResponse> {
     return request<ElectionResponse>(
       `/api/elections/${electionId}/state`,
@@ -158,20 +165,37 @@ export const api = {
 
   async addCandidate(
     electionId: string,
-    candidate: CandidateCreate,
-    token: string
+    data: CandidateCreate,
+    token?: string | null
   ): Promise<CandidateResponse> {
     return request<CandidateResponse>(
-      `/api/elections/${electionId}/candidates`,
+      `/api/v1/elections/${electionId}/candidates`,
       {
         method: "POST",
-        body: JSON.stringify(candidate),
+        body: JSON.stringify(data),
       },
       token
     );
   },
 
-  // Devices
+  async deleteCandidate(
+    electionId: string,
+    candidateId: string,
+    token?: string | null
+  ): Promise<void> {
+    return request<void>(
+      `/api/v1/elections/${electionId}/candidates/${candidateId}`,
+      {
+        method: "DELETE",
+      },
+      token
+    );
+  },
+
+  // ============================================================================
+  // DEVICES
+  // ============================================================================
+
   async getDevices(
     electionId: string,
     token?: string | null
@@ -186,7 +210,7 @@ export const api = {
   async registerDevice(
     electionId: string,
     data: DeviceRegister,
-    token: string
+    token?: string | null
   ): Promise<DeviceResponse> {
     return request<DeviceResponse>(
       `/api/elections/${electionId}/devices`,
@@ -202,7 +226,7 @@ export const api = {
     electionId: string,
     deviceId: string,
     status: DeviceStatus,
-    token: string
+    token?: string | null
   ): Promise<DeviceResponse> {
     return request<DeviceResponse>(
       `/api/elections/${electionId}/devices/${deviceId}/status`,
@@ -251,7 +275,7 @@ export const api = {
 
   async runVerification(
     electionId: string,
-    token: string
+    token?: string | null
   ): Promise<VerificationResponse> {
     return request<VerificationResponse>(
       `/api/elections/${electionId}/verify`,
@@ -264,7 +288,7 @@ export const api = {
 
   // WebSocket Ticket Handshake (supports election-scoped or global tickets)
   async getWsTicket(
-    token: string,
+    token?: string | null,
     electionId?: string | null
   ): Promise<WsTicketResponse> {
     return request<WsTicketResponse>(
@@ -297,7 +321,7 @@ export const api = {
 
   async signElectionManifest(
     electionId: string,
-    token: string
+    token?: string | null
   ): Promise<SignedManifestResponse> {
     return request<SignedManifestResponse>(
       `/api/elections/${electionId}/sign-manifest`,
@@ -320,7 +344,7 @@ export const api = {
 
   async createElectionAnchor(
     electionId: string,
-    token: string,
+    token?: string | null,
     provider: string = "LOCAL ANCHOR"
   ): Promise<AuditAnchorResponse> {
     return request<AuditAnchorResponse>(
@@ -355,6 +379,88 @@ export const api = {
 
   async getRFIDDemoCards(): Promise<{ cards: any[]; pseudonymization_algorithm: string; boundary_notice: string }> {
     return request<{ cards: any[]; pseudonymization_algorithm: string; boundary_notice: string }>("/api/rfid/demo-cards");
+  },
+
+  // Voters
+  async registerVoter(electionId: string, data: { name: string; date_of_birth: string; constituency: string }, token?: string | null): Promise<VoterResponse> {
+    return request<VoterResponse>(`/api/elections/${electionId}/voters`, { method: 'POST', body: JSON.stringify(data) }, token);
+  },
+
+  async getVoters(electionId: string, token?: string | null): Promise<VoterResponse[]> {
+    return request<VoterResponse[]>(`/api/elections/${electionId}/voters`, {}, token);
+  },
+
+  async checkEligibility(electionId: string, data: { name: string; date_of_birth: string; constituency: string }): Promise<EligibilityCheckResponse> {
+    return request<EligibilityCheckResponse>(`/api/elections/${electionId}/eligibility`, { method: 'POST', body: JSON.stringify(data) });
+  },
+
+  async lookupVoter(electionId: string, voterIdNumber: string): Promise<VoterResponse> {
+    return request<VoterResponse>(`/api/elections/${electionId}/voter-lookup?voter_id_number=${encodeURIComponent(voterIdNumber)}`);
+  },
+
+  // Polling Stations
+  async getPollingStations(electionId: string, token?: string | null): Promise<PollingStationResponse[]> {
+    return request<PollingStationResponse[]>(`/api/elections/${electionId}/polling-stations`, {}, token);
+  },
+
+  async createPollingStation(electionId: string, data: any, token?: string | null): Promise<PollingStationResponse> {
+    return request<PollingStationResponse>(`/api/elections/${electionId}/polling-stations`, { method: 'POST', body: JSON.stringify(data) }, token);
+  },
+
+  // Complaints
+  async submitComplaint(data: { election_id?: string; category: string; description: string; complainant_name: string; complainant_contact?: string }): Promise<ComplaintResponse> {
+    return request<ComplaintResponse>('/api/complaints', { method: 'POST', body: JSON.stringify(data) });
+  },
+
+  async getComplaints(token?: string | null): Promise<ComplaintResponse[]> {
+    return request<ComplaintResponse[]>('/api/complaints', {}, token);
+  },
+
+  async trackComplaint(referenceNumber: string): Promise<ComplaintResponse> {
+    return request<ComplaintResponse>(`/api/complaints/track/${encodeURIComponent(referenceNumber)}`);
+  },
+
+  async updateComplaintStatus(complaintId: string, data: { status: string; assigned_officer?: string; resolution_notes?: string }, token?: string | null): Promise<ComplaintResponse> {
+    return request<ComplaintResponse>(`/api/complaints/${complaintId}/status`, { method: 'PATCH', body: JSON.stringify(data) }, token);
+  },
+
+  // Simulation
+  async runSimulation(data: { preset: string; election_name?: string }, token?: string | null): Promise<SimulationResponse> {
+    return request<SimulationResponse>('/api/simulation/run', { method: 'POST', body: JSON.stringify(data) }, token);
+  },
+
+  async getSimulationPresets(): Promise<any> {
+    return request<any>('/api/simulation/presets');
+  },
+
+  // Transparency (public, no auth)
+  async getTransparencyElections(): Promise<TransparencyOverview[]> {
+    return request<TransparencyOverview[]>('/api/transparency/elections');
+  },
+
+  async getTransparencyOverview(electionId: string): Promise<TransparencyOverview> {
+    return request<TransparencyOverview>(`/api/transparency/elections/${electionId}`);
+  },
+
+  async getTransparencyCandidates(electionId: string): Promise<CandidateResponse[]> {
+    return request<CandidateResponse[]>(`/api/transparency/elections/${electionId}/candidates`);
+  },
+
+  async getTransparencyResults(electionId: string): Promise<any> {
+    return request<any>(`/api/transparency/elections/${electionId}/results`);
+  },
+
+  // Voting session (for EVM digital twin)
+  async authorizeSession(electionId: string, data: { voter_credential: string; device_id: string }, token?: string | null): Promise<SessionResponse> {
+    return request<SessionResponse>(`/api/elections/${electionId}/sessions`, { method: 'POST', body: JSON.stringify(data) }, token);
+  },
+
+  async castVote(data: { session_token: string; candidate_id: string; device_id: string; sequence_number: number }): Promise<any> {
+    return request<any>('/api/votes', { method: 'POST', body: JSON.stringify(data) });
+  },
+
+  async getSessions(electionId: string, token?: string | null): Promise<SessionResponse[]> {
+    return request<SessionResponse[]>(`/api/elections/${electionId}/sessions`, {}, token);
   },
 };
 

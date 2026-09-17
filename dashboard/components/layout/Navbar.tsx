@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { ShieldCheck, LogOut, User as UserIcon } from "lucide-react";
 import { StatusBadge } from "@/components/common/StatusBadge";
+import { ElectionSelector } from "@/components/election/ElectionSelector";
 
 export function Navbar() {
   const { user, role, logout } = useAuth();
@@ -32,6 +33,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
+          <ElectionSelector />
           {user ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-full py-1 px-3">

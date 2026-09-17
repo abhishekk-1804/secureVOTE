@@ -2,7 +2,7 @@
 SecureVOTE Backend Configuration.
 
 Loads settings from environment variables / .env file.
-This is a research-oriented prototype â€” not production election infrastructure.
+This is a research-oriented prototype Ã¢â‚¬â€ not production election infrastructure.
 """
 
 from pydantic_settings import BaseSettings
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60
 
-    # Signing key for election manifests (backend-only per spec Â§9)
+    # Signing key for election manifests (backend-only per spec Ã‚Â§9)
     signing_key_path: str = Field(
         default="./signing_key.pem",
         description="Path to PEM-encoded signing key for election manifests.",

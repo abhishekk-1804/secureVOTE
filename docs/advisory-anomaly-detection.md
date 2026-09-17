@@ -1,4 +1,4 @@
-# SecureVOTE — Advisory Anomaly Detection Specification
+# SecureVOTE  -  Advisory Anomaly Detection Specification
 
 ## Overview
 SecureVOTE incorporates a transparent, rule-based anomaly detection engine. It continuously analyzes ballot timing, device sequence numbers, physical tamper signals, and rejection patterns to surface potential integrity anomalies for election administrators and independent auditors.
@@ -53,7 +53,7 @@ Per the master security specification and mandatory Phase 5 Amendment:
 > - Cryptographic signing of results
 > - Independent verification outcomes
 
-Automated heuristic components must never possess the power to disenfranchise voters, stall an election, or invalidate certified election results. Findings are surfaced for **human review only**.
+Automated heuristic components must never possess the power to disenfranchise voters, stall an election, or invalidate published election results. Findings are surfaced for **human review only**.
 
 ### 3.1 Verification Proof
 This invariant is enforced in executable test code (`tests/test_anomaly_detection.py::test_mandatory_hard_lifecycle_boundary`):

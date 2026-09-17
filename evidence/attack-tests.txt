@@ -1,4 +1,4 @@
-﻿============================= test session starts =============================
+============================= test session starts =============================
 platform win32 -- Python 3.12.10, pytest-8.3.4, pluggy-1.6.0 -- D:\secureVOTE\backend\venv\Scripts\python.exe
 cachedir: .pytest_cache
 rootdir: D:\secureVOTE\backend

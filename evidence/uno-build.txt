@@ -1,4 +1,4 @@
-﻿Processing uno (platform: atmelavr; board: uno; framework: arduino)
+Processing uno (platform: atmelavr; board: uno; framework: arduino)
 --------------------------------------------------------------------------------
 Verbose mode can be enabled via `-v, --verbose` option
 CONFIGURATION: https://docs.platformio.org/page/boards/atmelavr/uno.html

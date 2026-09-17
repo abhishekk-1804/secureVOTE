@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 // =============================================================================
-// SecureVOTE Embedded Prototype — Hardware Configuration & Pinout Definition
+// SecureVOTE Embedded Prototype - Hardware Configuration & Pinout Definition
 // Target: Arduino Uno (ATmega328P) @ 16 MHz
 // LCD: 20x4 Character LCD with PCF8574 I2C Backpack (Address: 0x27)
 // =============================================================================

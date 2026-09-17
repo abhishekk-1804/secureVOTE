@@ -1,4 +1,4 @@
-﻿Verbosity level can be increased via `-v, -vv, or -vvv` option
+Verbosity level can be increased via `-v, -vv, or -vvv` option
 Collected 1 tests
 
 Processing * in native environment

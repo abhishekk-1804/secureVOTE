@@ -2,7 +2,7 @@
 Device management service for SecureVOTE.
 
 Handles device registration, activation, suspension, and revocation.
-Devices are simulated EVM units â€” in a production system they would be
+Devices are simulated EVM units Ã¢â‚¬â€ in a production system they would be
 physically authenticated hardware modules.
 """
 
@@ -26,7 +26,7 @@ class DeviceService:
         "REGISTERED": ["ACTIVE"],
         "ACTIVE": ["SUSPENDED", "REVOKED"],
         "SUSPENDED": ["ACTIVE", "REVOKED"],
-        # REVOKED is terminal â€” no transitions out
+        # REVOKED is terminal Ã¢â‚¬â€ no transitions out
     }
 
     @staticmethod
@@ -97,7 +97,7 @@ class DeviceService:
         """
         Update a device's status with strict transition validation.
 
-        Revoked devices cannot be re-activated â€” this is a one-way
+        Revoked devices cannot be re-activated Ã¢â‚¬â€ this is a one-way
         security action.
         """
         result = await db.execute(
@@ -123,7 +123,7 @@ class DeviceService:
             raise HTTPException(
                 status_code=409,
                 detail=(
-                    f"Invalid device status transition: {device.status} â†’ {data.status}. "
+                    f"Invalid device status transition: {device.status} Ã¢â€ â€™ {data.status}. "
                     f"Valid transitions: {valid_targets}"
                 ),
             )
@@ -208,7 +208,7 @@ class DeviceService:
         Validate that a device can accept votes.
 
         The device must exist, belong to the election, and be ACTIVE.
-        Unknown or revoked devices are rejected per spec Â§12 attack #8.
+        Unknown or revoked devices are rejected per spec Ã‚Â§12 attack #8.
         """
         result = await db.execute(
             select(Device).where(

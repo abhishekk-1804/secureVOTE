@@ -1,4 +1,4 @@
-# SecureVOTE — Replay Protection & Sequence Counter Specification
+# SecureVOTE  -  Replay Protection & Sequence Counter Specification
 
 ## Overview
 In electronic voting systems, a critical threat is the replay or retransmission of previously emitted voting records (e.g. over a tapped serial line or by maliciously power-cycling a polling device).

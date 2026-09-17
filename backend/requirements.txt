@@ -17,7 +17,7 @@ python-multipart==0.0.18
 pydantic==2.10.3
 pydantic-settings==2.7.0
 
-# Cryptographic signing (backend-only, per Â§9)
+# Cryptographic signing (backend-only, per Ã‚Â§9)
 cryptography==44.0.0
 
 # Serial communication (Phase 2+)

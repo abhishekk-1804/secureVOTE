@@ -1,4 +1,4 @@
-# SecureVOTE — RFID & Identity Abstraction Specification
+# SecureVOTE  -  RFID & Identity Abstraction Specification
 
 ## 1. Overview & Architectural Principles
 
@@ -13,7 +13,7 @@ SecureVOTE provides an identity abstraction layer that decouples physical identi
 ## 2. Keyed Pseudonymization (Mandatory Amendment 3)
 
 ### 2.1 The Vulnerability of Bare SHA-256
-In many naïve electronic voting designs, voter card IDs are hashed using a plain cryptographic hash function:
+In many naÃ¯ve electronic voting designs, voter card IDs are hashed using a plain cryptographic hash function:
 $$\text{pseudonym}_{\text{insecure}} = \text{SHA-256}(\text{raw\_uid})$$
 
 Because physical RFID card UIDs typically comprise only 4 to 7 bytes (e.g. MIFARE Classic 4-byte UIDs or MIFARE Ultralight 7-byte UIDs), the entire keyspace is tiny:

@@ -1,4 +1,4 @@
-﻿{
+{
   "valid": true,
   "checks": {
     "export_envelope": true,

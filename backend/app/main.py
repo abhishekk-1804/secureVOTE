@@ -1,5 +1,5 @@
 """
-SecureVOTE Backend â€” FastAPI Application Entry Point.
+SecureVOTE Backend Ã¢â‚¬â€ FastAPI Application Entry Point.
 
 This is a research-oriented prototype of an election integrity pipeline.
 It is NOT certified election equipment, production election infrastructure,
@@ -36,7 +36,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS â€” allow dashboard dev server
+# CORS Ã¢â‚¬â€ allow dashboard dev server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -46,7 +46,7 @@ app.add_middleware(
 )
 
 # Import and register routers
-from app.routers import auth, elections, votes, devices, audit, results, websockets, signing, anchors, anomalies, rfid  # noqa: E402
+from app.routers import auth, elections, votes, devices, audit, results, websockets, signing, anchors, anomalies, rfid, voters, complaints, polling_stations, simulation, transparency  # noqa: E402
 
 app.include_router(auth.router)
 app.include_router(elections.router)
@@ -61,6 +61,11 @@ app.include_router(anchors.router)
 app.include_router(anchors.election_anchor_router)
 app.include_router(anomalies.router)
 app.include_router(rfid.router)
+app.include_router(voters.router)
+app.include_router(complaints.router)
+app.include_router(polling_stations.router)
+app.include_router(simulation.router)
+app.include_router(transparency.router)
 
 
 

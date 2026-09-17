@@ -1,4 +1,4 @@
-﻿2026-09-16 22:34:04,129 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-09-16 22:34:04,129 INFO sqlalchemy.engine.Engine BEGIN (implicit)
 2026-09-16 22:34:04,130 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("users")
 2026-09-16 22:34:04,130 INFO sqlalchemy.engine.Engine [raw sql] ()
 2026-09-16 22:34:04,131 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("elections")

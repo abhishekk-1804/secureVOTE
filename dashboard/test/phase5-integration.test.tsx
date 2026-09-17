@@ -170,7 +170,7 @@ describe("Phase 5 Dashboard Integration", () => {
     render(<SecurityCenterPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("ADVISORY ONLY — REQUIRES HUMAN REVIEW")).toBeInTheDocument();
+      expect(screen.getByText(/ADVISORY ONLY.*REQUIRES HUMAN REVIEW/i)).toBeInTheDocument();
       expect(screen.getByText("TAMPER_CORRELATION")).toBeInTheDocument();
       expect(screen.getByText("RFID / Contactless Identity Abstraction Simulator")).toBeInTheDocument();
     });

@@ -2,8 +2,8 @@
 Independent verification engine for SecureVOTE.
 
 The verifier independently recomputes tallies, hashes, and reconciliation
-from raw ballot/audit records â€” it never reads a precomputed "VERIFIED"
-flag and passes it through (spec Â§4 trust boundary rule).
+from raw ballot/audit records Ã¢â‚¬â€ it never reads a precomputed "VERIFIED"
+flag and passes it through (spec Ã‚Â§4 trust boundary rule).
 
 Generates and optionally signs result manifests.
 """
@@ -178,7 +178,7 @@ class VerificationService:
     ) -> bool:
         """
         Independently recount all ballots from raw records and compare
-        with the reported totals. This is separate from reconciliation â€”
+        with the reported totals. This is separate from reconciliation Ã¢â‚¬â€
         it verifies that the reconciliation service itself computed correctly.
         """
         from sqlalchemy import func

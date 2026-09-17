@@ -1,4 +1,4 @@
-# SecureVOTE — Independent Verifier Specification
+# SecureVOTE  -  Independent Verifier Specification
 
 ## Overview
 A core tenet of electronic voting integrity is that verification must **never** be performed by simply asking the server whether results are verified.

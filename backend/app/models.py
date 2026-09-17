@@ -1,7 +1,7 @@
 """
 SQLAlchemy ORM models for SecureVOTE.
 
-This is a research-oriented prototype. The database is not assumed immutable â€”
+This is a research-oriented prototype. The database is not assumed immutable Ã¢â‚¬â€
 integrity comes from append-only audit events + hash chaining + independent
 verification, not from row-level protection alone.
 """
@@ -41,7 +41,7 @@ class User(Base):
     Application user for simulated credential/session authorization.
 
     Roles: ADMIN, AUDITOR, OBSERVER.
-    This is NOT a voter record â€” voters are represented by VotingSession.
+    This is NOT a voter record Ã¢â‚¬â€ voters are represented by VotingSession.
     """
 
     __tablename__ = "users"
@@ -62,7 +62,7 @@ class Election(Base):
     """
     An election lifecycle record.
 
-    States: CREATED â†’ CONFIGURED â†’ LOCKED â†’ OPEN â†’ SUSPENDED â†’ CLOSED â†’ PUBLISHED
+    States: CREATED Ã¢â€ â€™ CONFIGURED Ã¢â€ â€™ LOCKED Ã¢â€ â€™ OPEN Ã¢â€ â€™ SUSPENDED Ã¢â€ â€™ CLOSED Ã¢â€ â€™ PUBLISHED
     """
 
     __tablename__ = "elections"
@@ -129,7 +129,7 @@ class Device(Base):
     """
     A registered voting device (EVM unit).
 
-    Status: REGISTERED â†’ ACTIVE â†’ SUSPENDED / REVOKED
+    Status: REGISTERED Ã¢â€ â€™ ACTIVE Ã¢â€ â€™ SUSPENDED / REVOKED
     Tracks last_sequence_number for replay protection.
     """
 
@@ -160,8 +160,8 @@ class VotingSession(Base):
     A simulated voting session / credential authorization.
 
     Each voter_credential gets exactly one session per election.
-    This is a simulated credential â€” not a real voter identity mechanism.
-    Status: AUTHORIZED â†’ VOTED / EXPIRED / REVOKED
+    This is a simulated credential Ã¢â‚¬â€ not a real voter identity mechanism.
+    Status: AUTHORIZED Ã¢â€ â€™ VOTED / EXPIRED / REVOKED
     """
 
     __tablename__ = "voting_sessions"
@@ -195,7 +195,7 @@ class Ballot(Base):
     Linked to a session (one ballot per session) and a device.
     sequence_number is monotonically increasing per device for replay protection.
 
-    Note: voter anonymity is NOT preserved in this prototype â€” the session
+    Note: voter anonymity is NOT preserved in this prototype Ã¢â‚¬â€ the session
     linkage exists for educational demonstration of audit trails.
     """
 
@@ -232,7 +232,7 @@ class AuditEntry(Base):
     all subsequent hashes to mismatch.
 
     The chain is verified by independently recomputing hashes from raw
-    records â€” never by reading a precomputed flag.
+    records Ã¢â‚¬â€ never by reading a precomputed flag.
     """
 
     __tablename__ = "audit_entries"
@@ -264,7 +264,7 @@ class ResultManifest(Base):
 
     Contains independently verifiable tallies, reconciliation status, and
     audit chain status. The manifest_hash is digitally signed backend-side
-    (per spec Â§9 â€” Arduino Uno does not perform asymmetric signing).
+    (per spec Ã‚Â§9 Ã¢â‚¬â€ Arduino Uno does not perform asymmetric signing).
     """
 
     __tablename__ = "result_manifests"
@@ -284,3 +284,63 @@ class ResultManifest(Base):
     verified_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     election: Mapped["Election"] = relationship(back_populates="result_manifest")
+
+
+# ---------------------------------------------------------------------------
+# Voter (synthetic/demo)
+# ---------------------------------------------------------------------------
+
+class Voter(Base):
+    __tablename__ = "voters"
+    __table_args__ = (
+        UniqueConstraint("election_id", "voter_id_number", name="uq_voter_election_id"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    election_id: Mapped[str] = mapped_column(String(50), ForeignKey("elections.id"), nullable=False)
+    voter_id_number: Mapped[str] = mapped_column(String(20), nullable=False)  # Synthetic ID like "VTR-00001"
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    date_of_birth: Mapped[str] = mapped_column(String(10), nullable=False)  # YYYY-MM-DD
+    constituency: Mapped[str] = mapped_column(String(100), nullable=False)
+    polling_station_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    eligibility_status: Mapped[str] = mapped_column(String(20), nullable=False, default="PENDING")  # ELIGIBLE, NOT_ELIGIBLE, PENDING, NEEDS_REVIEW
+    registration_status: Mapped[str] = mapped_column(String(20), nullable=False, default="REGISTERED")  # REGISTERED, VERIFIED, REJECTED
+    has_voted: Mapped[bool] = mapped_column(Boolean, default=False)
+    registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+# ---------------------------------------------------------------------------
+# PollingStation
+# ---------------------------------------------------------------------------
+
+class PollingStation(Base):
+    __tablename__ = "polling_stations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    election_id: Mapped[str] = mapped_column(String(50), ForeignKey("elections.id"), nullable=False)
+    station_code: Mapped[str] = mapped_column(String(20), nullable=False)  # e.g. "PS-001"
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    constituency: Mapped[str] = mapped_column(String(100), nullable=False)
+    location: Mapped[str] = mapped_column(String(255), nullable=False)
+    assigned_devices: Mapped[int] = mapped_column(Integer, default=0)
+    registered_voters: Mapped[int] = mapped_column(Integer, default=0)
+    votes_cast: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="SETUP")  # SETUP, READY, POLLING, CLOSED
+    officer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+# ---------------------------------------------------------------------------
+# Complaint
+# ---------------------------------------------------------------------------
+
+class Complaint(Base):
+    __tablename__ = "complaints"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    election_id: Mapped[str | None] = mapped_column(String(50), ForeignKey("elections.id"), nullable=True)
+    reference_number: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)  # e.g. "GRV-2026-00001"
+    category: Mapped[str] = mapped_column(String(50), nullable=False)  # VOTER_REGISTRATION, POLLING_STATION, EVM, VOTING_ISSUE, ACCESSIBILITY, ELECTION_PROCESS, CANDIDATE_PARTY, TECHNICAL, OTHER
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    complainant_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    complainant_contact: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="SUBMITTED")  # SUBMITTED, RECEIVED, ASSIGNED, UNDER_REVIEW, RESOLVED, CLOSED
+    assigned_officer: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    resolution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
