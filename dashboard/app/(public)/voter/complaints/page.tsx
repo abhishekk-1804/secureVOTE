@@ -12,15 +12,15 @@ import { api } from "@/lib/api-client";
 import { formatApiError } from "@/lib/format-error";
 
 const CATEGORIES = [
-  { value: "Voter Registration", label: "Voter Registration" },
-  { value: "Polling Station", label: "Polling Station" },
+  { value: "VOTER_REGISTRATION", label: "Voter Registration" },
+  { value: "POLLING_STATION", label: "Polling Station" },
   { value: "EVM", label: "EVM Issue" },
-  { value: "Voting Issue", label: "Voting Issue" },
-  { value: "Accessibility", label: "Accessibility" },
-  { value: "Election Process", label: "Election Process" },
-  { value: "Candidate/Party", label: "Candidate or Party" },
-  { value: "Technical", label: "Technical Issue" },
-  { value: "Other", label: "Other" }
+  { value: "VOTING_ISSUE", label: "Voting Issue" },
+  { value: "ACCESSIBILITY", label: "Accessibility" },
+  { value: "ELECTION_PROCESS", label: "Election Process" },
+  { value: "CANDIDATE_PARTY", label: "Candidate or Party" },
+  { value: "TECHNICAL", label: "Technical Issue" },
+  { value: "OTHER", label: "Other" }
 ];
 
 export default function ComplaintsPage() {
@@ -49,13 +49,14 @@ export default function ComplaintsPage() {
     setFileError(null);
 
     try {
-      // Assuming api.submitComplaint exists, if not mock it
-      // const res = await api.submitComplaint(fileData);
-
-      // MOCK implementation for demo
-      await new Promise(r => setTimeout(r, 1000));
-      const randomRef = `GRV-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
-      setFileSuccess(randomRef);
+      const res = await api.submitComplaint({
+        category: fileData.category,
+        description: fileData.description,
+        complainant_name: fileData.name,
+        complainant_contact: fileData.contact,
+        election_id: "EV-2026-001",
+      });
+      setFileSuccess(res.reference_number);
     } catch (err) {
       setFileError(formatApiError(err));
     } finally {
@@ -72,23 +73,15 @@ export default function ComplaintsPage() {
     setTrackData(null);
 
     try {
-      // Assuming api.trackComplaint exists, if not mock it
-      // const res = await api.trackComplaint(trackId);
-
-      // MOCK implementation for demo
-      await new Promise(r => setTimeout(r, 1000));
-      if (trackId.startsWith("GRV-")) {
-        setTrackData({
-          reference: trackId,
-          category: "Polling Station",
-          status: "UNDER_REVIEW",
-          description: "Long queue and insufficient shade at the station.",
-          resolutionNotes: "We have dispatched a team to set up additional shade structures.",
-          createdAt: new Date().toISOString()
-        });
-      } else {
-        throw new Error("Invalid complaint reference format.");
-      }
+      const res = await api.trackComplaint(trackId.trim());
+      setTrackData({
+        reference: res.reference_number,
+        category: res.category,
+        status: res.status,
+        description: res.description,
+        resolutionNotes: res.resolution_notes || "Your complaint has been received and is being processed by election officers.",
+        createdAt: res.created_at,
+      });
     } catch (err) {
       setTrackError(formatApiError(err));
     } finally {

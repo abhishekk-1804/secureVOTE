@@ -86,11 +86,11 @@ export default function EvmLauncher() {
     fetchDevices();
   }, [selectedElectionId, token]);
 
-  const handleSeedDemo = async () => {
+  const handleSeedDemo = async (reset: boolean = false) => {
     try {
       setSeeding(true);
-      setFeedbackMsg("Seeding deterministic demo election (EV-2026-001)...");
-      await api.seedDemoElection();
+      setFeedbackMsg(reset ? "Resetting and seeding demo election (EV-2026-001)..." : "Seeding deterministic demo election (EV-2026-001)...");
+      await api.seedDemoElection(token, reset);
       setFeedbackMsg("Demo election seeded successfully! Loading devices...");
       await fetchElections();
       setSelectedElectionId("EV-2026-001");
@@ -141,7 +141,8 @@ export default function EvmLauncher() {
                 To launch the EVM terminal, an election must be in <span className="text-emerald-400 font-mono">OPEN</span> state with active ballot units.
               </p>
               <button
-                onClick={handleSeedDemo}
+                type="button"
+                onClick={() => handleSeedDemo(false)}
                 disabled={seeding}
                 className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
               >
@@ -157,7 +158,7 @@ export default function EvmLauncher() {
                 <label className="text-sm font-medium text-slate-400">Select Election</label>
                 <button
                   type="button"
-                  onClick={handleSeedDemo}
+                  onClick={() => handleSeedDemo(true)}
                   disabled={seeding}
                   className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
                 >

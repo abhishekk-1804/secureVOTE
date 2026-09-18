@@ -24,23 +24,23 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/voter" className="w-full sm:w-auto">
-              <Button size="lg" className="w-full bg-civic-saffron text-slate-900 hover:bg-amber-400 font-bold">
+            <Link href="/voter" className="w-full sm:w-auto block">
+              <Button as="span" size="lg" className="w-full bg-civic-saffron text-slate-900 hover:bg-amber-400 font-bold">
                 ENTER VOTER PORTAL
               </Button>
             </Link>
-            <Link href="/evm" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="w-full border-white text-white hover:bg-white/10 dark:border-white dark:text-white dark:hover:bg-white/10">
+            <Link href="/evm" className="w-full sm:w-auto block">
+              <Button as="span" size="lg" variant="outline" className="w-full border-white text-white hover:bg-white/10 dark:border-white dark:text-white dark:hover:bg-white/10">
                 OPEN EVM SIMULATOR
               </Button>
             </Link>
-            <Link href="/login" className="w-full sm:w-auto">
-              <Button size="lg" variant="secondary" className="w-full bg-slate-800 hover:bg-slate-700">
+            <Link href="/login" className="w-full sm:w-auto block">
+              <Button as="span" size="lg" variant="secondary" className="w-full bg-slate-800 hover:bg-slate-700">
                 OPEN OFFICER CONSOLE
               </Button>
             </Link>
-            <Link href="/verify" className="w-full sm:w-auto">
-              <Button size="lg" variant="ghost" className="w-full text-white hover:bg-white/10 dark:text-white dark:hover:bg-white/10">
+            <Link href="/verify" className="w-full sm:w-auto block">
+              <Button as="span" size="lg" variant="ghost" className="w-full text-white hover:bg-white/10 dark:text-white dark:hover:bg-white/10">
                 VERIFY ELECTION
               </Button>
             </Link>

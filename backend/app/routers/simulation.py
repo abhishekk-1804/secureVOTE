@@ -316,10 +316,10 @@ async def run_simulation(req: SimulationRequest, db: AsyncSession = Depends(get_
 
 
 @router.post("/seed-demo")
-async def seed_demo_endpoint(db: AsyncSession = Depends(get_db)):
+async def seed_demo_endpoint(reset: bool = False, db: AsyncSession = Depends(get_db)):
     """Idempotently seed the deterministic demo election in OPEN state."""
     from scripts.seed_demo_election import seed_demo_election
-    await seed_demo_election(reset=False, session=db)
+    await seed_demo_election(reset=reset, session=db)
     return {
         "status": "SUCCESS",
         "election_id": "EV-2026-001",

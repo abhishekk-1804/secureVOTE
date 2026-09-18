@@ -50,7 +50,8 @@ export interface CandidateCreate {
 
 export interface ElectionResponse {
   id: string;
-  title: string;
+  name?: string;
+  title?: string;
   description: string | null;
   state: ElectionState;
   configuration_hash: string | null;

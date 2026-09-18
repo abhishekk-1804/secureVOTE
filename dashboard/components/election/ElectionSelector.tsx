@@ -22,7 +22,7 @@ export function ElectionSelector() {
     >
       {elections.map((election) => (
         <option key={election.id} value={election.id}>
-          {election.title} ({election.state})
+          {election.name || (election as any).title || election.id} ({election.state})
         </option>
       ))}
     </select>

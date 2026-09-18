@@ -47,6 +47,30 @@ async def get_current_user(
     return user
 
 
+async def get_optional_current_user(
+    db: AsyncSession = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+) -> User | None:
+    """Extract and validate current user if token present; otherwise None."""
+    if not credentials:
+        return None
+
+    payload = decode_access_token(credentials.credentials)
+    if payload is None:
+        return None
+
+    username = payload.get("sub")
+    if not username:
+        return None
+
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+    if not user or not user.is_active:
+        return None
+
+    return user
+
+
 def require_role(*roles: str):
     """Dependency that checks the current user has one of the required roles."""
     async def check_role(current_user: User = Depends(get_current_user)) -> User:

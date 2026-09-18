@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { AlertCircle, UserPlus, CheckCircle, Search, MapPin, Users, HelpCircle, MessageSquare } from "lucide-react";
+import { AlertCircle, UserPlus, CheckCircle, Search, MapPin, Users, HelpCircle, MessageSquare, Vote } from "lucide-react";
 
 export default function VoterPortalPage() {
   const services = [
+    {
+      title: "Cast Vote (Digital EVM)",
+      description: "Experience the secure EVM digital twin and cast your ballot.",
+      icon: <Vote className="h-6 w-6 text-amber-500" />,
+      href: "/voter/vote"
+    },
     {
       title: "Check Eligibility",
       description: "Verify if you are eligible to vote in the upcoming elections.",
@@ -81,9 +87,11 @@ export default function VoterPortalPage() {
               <CardDescription>{service.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" variant="outline">
-                <Link href={service.href}>Access Service</Link>
-              </Button>
+              <Link href={service.href} className="w-full block">
+                <Button as="span" className="w-full" variant="outline">
+                  Access Service
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ))}

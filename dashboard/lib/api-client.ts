@@ -105,26 +105,10 @@ async function request<T>(
 export const api = {
   // Auth
   async login(username: string, password: string): Promise<TokenResponse> {
-    const formData = new URLSearchParams();
-    formData.append("username", username);
-    formData.append("password", password);
-
-    const url = `${API_BASE_URL}/api/auth/login`;
-    const res = await fetch(url, {
+    return request<TokenResponse>("/api/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString(),
+      body: JSON.stringify({ username, password }),
     });
-
-    if (!res.ok) {
-      let detail = "Invalid credentials";
-      try {
-        const err = await res.json();
-        if (err.detail) detail = err.detail;
-      } catch {}
-      throw new ApiError(res.status, detail);
-    }
-    return res.json();
   },
 
   async getMe(token?: string | null): Promise<UserResponse> {
@@ -157,7 +141,7 @@ export const api = {
       `/api/elections/${electionId}/state`,
       {
         method: "PATCH",
-        body: JSON.stringify({ state }),
+        body: JSON.stringify({ new_state: state }),
       },
       token
     );
@@ -168,14 +152,15 @@ export const api = {
     data: CandidateCreate,
     token?: string | null
   ): Promise<CandidateResponse> {
-    return request<CandidateResponse>(
-      `/api/v1/elections/${electionId}/candidates`,
+    const res = await request<CandidateResponse[]>(
+      `/api/elections/${electionId}/candidates`,
       {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ candidates: [data] }),
       },
       token
     );
+    return res[0];
   },
 
   async deleteCandidate(
@@ -454,9 +439,9 @@ export const api = {
     return request<any>(`/api/transparency/elections/${electionId}/results`);
   },
 
-  async seedDemoElection(token?: string | null): Promise<{ status: string; election_id: string; state: string; message: string }> {
+  async seedDemoElection(token?: string | null, reset: boolean = false): Promise<{ status: string; election_id: string; state: string; message: string }> {
     return request<{ status: string; election_id: string; state: string; message: string }>(
-      '/api/simulation/seed-demo',
+      `/api/simulation/seed-demo${reset ? '?reset=true' : ''}`,
       { method: 'POST' },
       token || undefined
     );

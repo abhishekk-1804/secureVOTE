@@ -99,7 +99,7 @@ export default function CommandCenterPage() {
           >
             {elections.map((el) => (
               <option key={el.id} value={el.id}>
-                {el.id}  -  {el.title}
+                {el.id}  -  {el.name || (el as any).title || el.id}
               </option>
             ))}
           </select>

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import AuditEntry, Ballot, Candidate, Device, Election, ResultManifest, User
-from app.routers.auth import get_current_user, require_role
+from app.routers.auth import get_current_user, get_optional_current_user, require_role
 from app.schemas import (
     CandidateBatchCreate,
     CandidateResponse,
@@ -99,15 +99,22 @@ async def change_state(
 async def export_election(
     election_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_current_user),
 ):
     """
     Export complete election archive for offline independent machine verification.
     Contains raw candidates, devices, ballots, audit entries, and cryptographic manifest.
+    Public export is permitted if election is CLOSED or PUBLISHED. If open/draft, requires authentication.
     """
     election = await db.get(Election, election_id)
     if not election:
         raise HTTPException(status_code=404, detail=f"Election {election_id} not found.")
+
+    if election.state not in ["CLOSED", "PUBLISHED"] and not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required to export election data prior to closure or publication.",
+        )
 
     candidates_res = await db.execute(
         select(Candidate)

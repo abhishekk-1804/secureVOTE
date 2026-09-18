@@ -11,11 +11,36 @@ export function useActiveElection() {
   useEffect(() => {
     async function fetch() {
       try {
-        const elections = await api.getElections();
+        let elections: any[] = [];
+        try {
+          elections = await api.getElections();
+        } catch {
+          // Fall back to unauthenticated public transparency
+        }
+
+        if (!elections || elections.length === 0) {
+          try {
+            const publicElections = await api.getTransparencyElections();
+            elections = publicElections.map(e => ({
+              id: e.election_id,
+              name: e.election_name,
+              title: e.election_name,
+              state: e.state,
+              total_ballots: e.total_ballots,
+              device_count: e.device_count,
+            }));
+          } catch {}
+        }
+
         if (elections.length > 0) {
           // Prefer OPEN election, then most recent
           const open = elections.find(e => e.state === 'OPEN');
-          setElection(open || elections[0]);
+          const chosen = open || elections[0];
+          setElection({
+            ...chosen,
+            name: chosen.name || chosen.title || chosen.id,
+            title: chosen.name || chosen.title || chosen.id,
+          });
         }
       } catch (err: any) {
         setError(err.message || 'Unable to load election data');
