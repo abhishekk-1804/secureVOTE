@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api } from "@/lib/api-client";
+import { useAuth } from "@/context/AuthContext";
 import { ElectionResponse, ElectionExportResponse } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -30,6 +31,7 @@ interface VerificationCheckpoint {
 }
 
 export default function IndependentVerificationPage() {
+  const { token } = useAuth();
   const [elections, setElections] = useState<ElectionResponse[]>([]);
   const [selectedElectionId, setSelectedElectionId] = useState<string>("");
   const [loadingElections, setLoadingElections] = useState(true);
@@ -49,10 +51,26 @@ export default function IndependentVerificationPage() {
   useEffect(() => {
     async function loadElectionsList() {
       try {
-        const list = await api.getElections();
+        let list: any[] = [];
+        if (token) {
+          try {
+            list = await api.getElections(token);
+          } catch {}
+        }
+        if (list.length === 0) {
+          const publicData = await api.getTransparencyElections();
+          list = publicData.map(e => ({
+            id: e.election_id,
+            name: e.election_name,
+            title: e.election_name,
+            state: e.state,
+            total_ballots: e.total_ballots,
+            device_count: e.device_count,
+          } as any));
+        }
         setElections(list);
         if (list.length > 0) {
-          setSelectedElectionId(list[0].id);
+          setSelectedElectionId(prev => prev || list[0].id);
         }
       } catch {
         // Handle gracefully if backend is offline
@@ -61,7 +79,7 @@ export default function IndependentVerificationPage() {
       }
     }
     loadElectionsList();
-  }, []);
+  }, [token]);
 
   const runVerificationOnData = async (data: ElectionExportResponse) => {
     setVerifying(true);
@@ -251,7 +269,7 @@ export default function IndependentVerificationPage() {
     if (!selectedElectionId) return;
     try {
       setVerifying(true);
-      const data = await api.exportElection(selectedElectionId);
+      const data = await api.exportElection(selectedElectionId, token);
       setCustomFileLoaded(false);
       await runVerificationOnData(data);
     } catch (err: any) {

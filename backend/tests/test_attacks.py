@@ -567,3 +567,307 @@ async def test_attack_12_high_severity_anomaly_does_not_block_operations(
     sign_resp = await client.post(f"/api/elections/{election_id}/sign-manifest", headers=admin_headers)
     assert sign_resp.status_code == 200
     assert sign_resp.json()["digital_signature"]["algorithm"] == "Ed25519"
+
+
+# ===========================================================================
+# Attack 13: Voter Anonymity & Credential Isolation
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_13_voter_anonymity_schema_isolation(client: AsyncClient, admin_headers: dict):
+    """
+    Attack 13: Adversary queries or inspects ballot storage attempting to correlate
+    raw voter credentials or RFID UID with cast votes.
+    Expected: Ballot storage enforces architectural separation. The Ballot table
+    contains zero voter_credential or RFID identification columns.
+    """
+    election_id = "EV-2026-113"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    # Cast a vote
+    s_resp = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VOTER-ANONYMITY-CHECK", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    assert s_resp.status_code == 201
+    token = s_resp.json()["session_token"]
+
+    vote_resp = await client.post(
+        "/api/votes",
+        json={"session_token": token, "candidate_id": "C001", "device_id": "EVM-001", "sequence_number": 1},
+    )
+    assert vote_resp.status_code == 201
+
+    # Architectural assertion: Ballot model schema has no voter_credential or rfid column
+    ballot_columns = [c.name for c in Ballot.__table__.columns]
+    assert "voter_credential" not in ballot_columns
+    assert "voter_id" not in ballot_columns
+    assert "rfid_uid" not in ballot_columns
+    assert "aadhaar" not in ballot_columns
+
+
+# ===========================================================================
+# Attack 14: Sequence Rollback & Non-Monotonic Counter
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_14_sequence_rollback(client: AsyncClient, admin_headers: dict):
+    """
+    Attack 14: Device counter sequence rollback.
+    Expected: Rejection with HTTP 409 (REPLAY REJECTED).
+    """
+    election_id = "EV-2026-114"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    # Vote 1 at sequence 1
+    s1 = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VTR-ROLL-1", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    assert s1.status_code == 201
+    v1 = await client.post(
+        "/api/votes",
+        json={"session_token": s1.json()["session_token"], "candidate_id": "C001", "device_id": "EVM-001", "sequence_number": 1},
+    )
+    assert v1.status_code == 201
+
+    # Vote 2 at sequence 2
+    s2 = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VTR-ROLL-2", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    assert s2.status_code == 201
+    v2 = await client.post(
+        "/api/votes",
+        json={"session_token": s2.json()["session_token"], "candidate_id": "C002", "device_id": "EVM-001", "sequence_number": 2},
+    )
+    assert v2.status_code == 201
+
+    # Vote 3 attempted with rolled-back sequence 1
+    s3 = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VTR-ROLL-3", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    assert s3.status_code == 201
+    rollback_resp = await client.post(
+        "/api/votes",
+        json={"session_token": s3.json()["session_token"], "candidate_id": "C001", "device_id": "EVM-001", "sequence_number": 1},
+    )
+    assert rollback_resp.status_code == 409
+    assert "REPLAY REJECTED" in rollback_resp.json()["detail"]
+
+
+# ===========================================================================
+# Attack 15: Candidate Insertion Post-Freeze Violation
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_15_candidate_insertion_in_open_state(client: AsyncClient, admin_headers: dict):
+    """
+    Attack 15: An administrator or adversary attempts to inject candidates while election is OPEN.
+    Expected: Rejection with HTTP 409 (Cannot add candidates in OPEN state).
+    """
+    election_id = "EV-2026-115"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    mod_resp = await client.post(
+        f"/api/elections/{election_id}/candidates",
+        json={"candidates": [{"id": "C999", "name": "Unauthorized Injected Candidate", "position": 99}]},
+        headers=admin_headers,
+    )
+    assert mod_resp.status_code == 409
+    assert "Cannot add candidates" in mod_resp.json()["detail"]
+
+
+# ===========================================================================
+# Attack 16: Orphaned Audit Entry & Detached Hash Chain
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_16_orphaned_audit_entry_detached_chain(
+    client: AsyncClient,
+    admin_headers: dict,
+    db_engine,
+):
+    """
+    Attack 16: An attacker injects a rogue audit record with an invalid previous_hash.
+    Expected: Independent audit verification detects the broken hash chain.
+    """
+    election_id = "EV-2026-116"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    async with session_factory() as session:
+        # Get highest sequence number
+        res = await session.execute(
+            select(AuditEntry).where(AuditEntry.election_id == election_id).order_by(AuditEntry.sequence_number.desc())
+        )
+        last_entry = res.scalars().first()
+        next_seq = (last_entry.sequence_number + 1) if last_entry else 1
+
+        # Insert entry with fake previous_hash
+        rogue_entry = AuditEntry(
+            election_id=election_id,
+            sequence_number=next_seq,
+            event_type="UNAUTHORIZED_INJECTION",
+            event_data='{"malicious": true}',
+            actor="adversary",
+            device_id="EVM-001",
+            previous_hash="0000000000000000000000000000000000000000000000000000000000000000",
+            entry_hash="1111111111111111111111111111111111111111111111111111111111111111",
+        )
+        session.add(rogue_entry)
+        await session.commit()
+
+    verify_resp = await client.get(f"/api/elections/{election_id}/audit/verify", headers=admin_headers)
+    data = verify_resp.json()
+    assert data["is_intact"] is False
+    assert "AUDIT VERIFICATION FAILED" in data["details"]
+
+
+# ===========================================================================
+# Attack 17: Cross-Constituency Candidate Boundary Spoofing
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_17_cross_constituency_candidate_spoofing(client: AsyncClient, admin_headers: dict):
+    """
+    Attack 17: Attempt to cast a vote for a candidate ID that does not exist in this election.
+    Expected: HTTP 404 (Candidate not found in this election).
+    """
+    election_id = "EV-2026-117"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    s = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VTR-CONST-SPOOF", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    assert s.status_code == 201
+    token = s.json()["session_token"]
+
+    bad_vote = await client.post(
+        "/api/votes",
+        json={"session_token": token, "candidate_id": "C999", "device_id": "EVM-001", "sequence_number": 1},
+    )
+    assert bad_vote.status_code == 404
+    assert "not found in this election" in bad_vote.json()["detail"]
+
+
+# ===========================================================================
+# Attack 18: Genesis Block Hash Substitution
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_18_tampered_genesis_block(client: AsyncClient, admin_headers: dict, db_engine):
+    """
+    Attack 18: Adversary tampers with the genesis audit record (sequence #1 previous_hash).
+    Expected: Verification fails at sequence 1.
+    """
+    election_id = "EV-2026-118"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    async with session_factory() as session:
+        res = await session.execute(
+            select(AuditEntry).where(AuditEntry.election_id == election_id, AuditEntry.sequence_number == 1)
+        )
+        genesis_entry = res.scalar_one_or_none()
+        assert genesis_entry is not None
+        # Corrupt genesis previous_hash away from None
+        genesis_entry.previous_hash = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        await session.commit()
+
+    verify_resp = await client.get(f"/api/elections/{election_id}/audit/verify", headers=admin_headers)
+    data = verify_resp.json()
+    assert data["is_intact"] is False
+    assert data["first_broken_sequence"] == 1
+
+
+# ===========================================================================
+# Attack 19: Cross-Election Session Token Replay
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_19_cross_election_session_replay(client: AsyncClient, admin_headers: dict):
+    """
+    Attack 19: An attacker acquires a valid session token from Election A,
+    and attempts to submit it to a device registered under Election B.
+    Expected: Rejection with HTTP 409 (Device mismatch).
+    """
+    election_a = "EV-2026-119"
+    election_b = "EV-2026-121"
+    await _setup_open_election(client, admin_headers, election_a)
+
+    # Register election B with its own unique candidate IDs and device EVM-002
+    await client.post("/api/elections", json={"id": election_b, "name": "Election B"}, headers=admin_headers)
+    await client.post(
+        f"/api/elections/{election_b}/candidates",
+        json={"candidates": [{"id": "C191", "name": "Cand B1", "position": 1}, {"id": "C192", "name": "Cand B2", "position": 2}]},
+        headers=admin_headers,
+    )
+    await client.patch(f"/api/elections/{election_b}/state", json={"new_state": "LOCKED"}, headers=admin_headers)
+    await client.post(f"/api/elections/{election_b}/devices", json={"id": "EVM-002", "name": "Unit B"}, headers=admin_headers)
+    await client.patch(f"/api/elections/{election_b}/devices/EVM-002/status", json={"status": "ACTIVE"}, headers=admin_headers)
+    await client.patch(f"/api/elections/{election_b}/state", json={"new_state": "OPEN"}, headers=admin_headers)
+
+    # Obtain token for Election A (bound to EVM-001)
+    s_a = await client.post(
+        f"/api/elections/{election_a}/sessions",
+        json={"voter_credential": "VTR-CROSS-ELEC", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    assert s_a.status_code == 201
+    token_a = s_a.json()["session_token"]
+
+    # Attempt to use Election A's token with EVM-002 (belonging to Election B)
+    bad_replay = await client.post(
+        "/api/votes",
+        json={"session_token": token_a, "candidate_id": "C191", "device_id": "EVM-002", "sequence_number": 1},
+    )
+    assert bad_replay.status_code == 409
+    assert "Device mismatch" in bad_replay.json()["detail"]
+
+
+# ===========================================================================
+# Attack 20: Single-Use Session Double-Ballot Replay
+# ===========================================================================
+
+@pytest.mark.asyncio
+async def test_attack_20_concurrent_double_ballot(client: AsyncClient, admin_headers: dict):
+    """
+    Attack 20: Single-Use Session Double-Ballot Replay.
+    An attacker reuses a single-use session token that has already been
+    consumed by a first successful ballot to attempt a second vote.
+    Expected: First vote succeeds (201); second vote is rejected with HTTP 409
+    (Session status is VOTED) — the session token is strictly single-use.
+    """
+    election_id = "EV-2026-120"
+    await _setup_open_election(client, admin_headers, election_id)
+
+    s = await client.post(
+        f"/api/elections/{election_id}/sessions",
+        json={"voter_credential": "VTR-DOUBLE-BALLOT", "device_id": "EVM-001"},
+        headers=admin_headers,
+    )
+    assert s.status_code == 201
+    token = s.json()["session_token"]
+
+    # Vote 1: Succeeds
+    v1 = await client.post(
+        "/api/votes",
+        json={"session_token": token, "candidate_id": "C001", "device_id": "EVM-001", "sequence_number": 1},
+    )
+    assert v1.status_code == 201
+
+    # Vote 2: Re-use of consumed token -> Rejected
+    v2 = await client.post(
+        "/api/votes",
+        json={"session_token": token, "candidate_id": "C002", "device_id": "EVM-001", "sequence_number": 2},
+    )
+    assert v2.status_code == 409
+    assert "Session status is VOTED" in v2.json()["detail"]

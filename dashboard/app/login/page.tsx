@@ -107,8 +107,11 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 pt-6 border-t border-slate-800">
+          <div className="mb-3 p-2 bg-rose-950/30 border border-rose-500/30 rounded text-[11px] text-rose-300 font-mono text-center">
+            ⚠ LOCAL DEMO CREDENTIALS — Synthetic environment only. Never use in production.
+          </div>
           <p className="text-xs font-semibold text-slate-400 mb-2">
-            Demo Credentials (Pre-seeded RBAC Accounts):
+            Pre-seeded Accounts (Local Demonstration Only):
           </p>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <button

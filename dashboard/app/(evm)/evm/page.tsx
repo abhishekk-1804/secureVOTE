@@ -15,18 +15,44 @@ export default function EvmLauncher() {
   const [devices, setDevices] = useState<DeviceResponse[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+
+  const fetchElections = async () => {
+    try {
+      setLoading(true);
+      let list: any[] = [];
+      if (token) {
+        try {
+          const data = await api.getElections(token);
+          list = data.filter(e => e.state === "OPEN");
+        } catch {
+          // fallback to public transparency
+        }
+      }
+      if (list.length === 0) {
+        const publicData = await api.getTransparencyElections();
+        list = publicData.filter(e => e.state === "OPEN").map(e => ({
+          id: e.election_id,
+          name: e.election_name,
+          title: e.election_name,
+          state: e.state,
+          total_ballots: e.total_ballots,
+          device_count: e.device_count,
+        } as any));
+      }
+      setElections(list);
+      if (list.length > 0) {
+        setSelectedElectionId(prev => prev || list[0].id);
+      }
+    } catch (err) {
+      console.error("Failed to load elections", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchElections = async () => {
-      try {
-        const data = await api.getElections(token || undefined);
-        setElections(data.filter(e => e.state === "OPEN"));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchElections();
   }, [token]);
 
@@ -37,14 +63,44 @@ export default function EvmLauncher() {
     }
     const fetchDevices = async () => {
       try {
-        const data = await api.getDevices(selectedElectionId, token || undefined);
-        setDevices(data);
+        let devs: DeviceResponse[] = [];
+        if (token) {
+          try {
+            devs = await api.getDevices(selectedElectionId, token);
+          } catch {
+            // fallback
+          }
+        }
+        if (devs.length === 0) {
+          devs = await api.getTransparencyDevices(selectedElectionId);
+        }
+        setDevices(devs);
+        if (devs.length > 0) {
+          const activeDev = devs.find(d => d.status === "ACTIVE") || devs[0];
+          setSelectedDeviceId(prev => prev || activeDev.id);
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load devices", err);
       }
     };
     fetchDevices();
   }, [selectedElectionId, token]);
+
+  const handleSeedDemo = async () => {
+    try {
+      setSeeding(true);
+      setFeedbackMsg("Seeding deterministic demo election (EV-2026-001)...");
+      await api.seedDemoElection();
+      setFeedbackMsg("Demo election seeded successfully! Loading devices...");
+      await fetchElections();
+      setSelectedElectionId("EV-2026-001");
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    } catch (err: any) {
+      setFeedbackMsg(`Seeding failed: ${err.message || "Unknown error"}`);
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const handleLaunch = () => {
     if (selectedDeviceId && selectedElectionId) {
@@ -67,14 +123,47 @@ export default function EvmLauncher() {
           EVM DIGITAL TWIN - SIMULATION
         </div>
 
+        {feedbackMsg && (
+          <div className="mb-4 p-3 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-mono">
+            {feedbackMsg}
+          </div>
+        )}
+
         {loading ? (
           <div className="text-slate-400 flex items-center gap-2 py-4">
             <Activity className="w-4 h-4 animate-spin" /> Loading elections...
           </div>
+        ) : elections.length === 0 ? (
+          <div className="space-y-4 py-2">
+            <div className="p-4 rounded-lg bg-slate-800/80 border border-slate-700 text-center">
+              <p className="text-sm text-slate-300 font-medium mb-1">No Active Simulation Elections Found</p>
+              <p className="text-xs text-slate-400 mb-4">
+                To launch the EVM terminal, an election must be in <span className="text-emerald-400 font-mono">OPEN</span> state with active ballot units.
+              </p>
+              <button
+                onClick={handleSeedDemo}
+                disabled={seeding}
+                className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+              >
+                {seeding ? <Activity className="w-4 h-4 animate-spin" /> : null}
+                Seed Demo Election (EV-2026-001)
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Select Election</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium text-slate-400">Select Election</label>
+                <button
+                  type="button"
+                  onClick={handleSeedDemo}
+                  disabled={seeding}
+                  className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
+                >
+                  {seeding ? "Seeding..." : "Reset / Re-seed Demo"}
+                </button>
+              </div>
               <select
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-100 outline-none focus:border-amber-500 transition-colors"
                 value={selectedElectionId}
@@ -82,7 +171,9 @@ export default function EvmLauncher() {
               >
                 <option value="">-- Choose Election --</option>
                 {elections.map(e => (
-                  <option key={e.id} value={e.id}>{e.title}</option>
+                  <option key={e.id} value={e.id}>
+                    {(e as any).title || (e as any).name || e.id} ({e.state})
+                  </option>
                 ))}
               </select>
             </div>

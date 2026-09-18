@@ -57,13 +57,20 @@ class DeviceService:
 
         # Check for duplicate device ID
         existing = await db.execute(
-            select(Device).where(Device.id == data.id, Device.election_id == election_id)
+            select(Device).where(Device.id == data.id)
         )
-        if existing.scalar_one_or_none():
-            raise HTTPException(
-                status_code=409,
-                detail=f"Device {data.id} already registered for election {election_id}.",
-            )
+        existing_dev = existing.scalar_one_or_none()
+        if existing_dev:
+            if existing_dev.election_id == election_id:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Device {data.id} already registered for election {election_id}.",
+                )
+            else:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Device {data.id} already registered in the system.",
+                )
 
         device = Device(
             id=data.id,

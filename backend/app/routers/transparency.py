@@ -6,7 +6,7 @@ import json
 
 from app.database import get_db
 from app.models import Election, Candidate, PollingStation, Device, Voter, ResultManifest
-from app.schemas import TransparencyOverview, CandidateResponse
+from app.schemas import TransparencyOverview, CandidateResponse, DeviceResponse
 
 router = APIRouter(prefix="/api/transparency", tags=["Transparency"])
 
@@ -106,3 +106,13 @@ async def get_transparency_results(election_id: str, db: AsyncSession = Depends(
         "manifest_hash": man.manifest_hash,
         "digital_signature": man.digital_signature
     }
+
+
+@router.get("/elections/{election_id}/devices", response_model=List[DeviceResponse])
+async def get_transparency_devices(election_id: str, db: AsyncSession = Depends(get_db)):
+    el = await db.get(Election, election_id)
+    if not el:
+        raise HTTPException(status_code=404, detail="Election not found")
+
+    result = await db.execute(select(Device).where(Device.election_id == election_id))
+    return result.scalars().all()

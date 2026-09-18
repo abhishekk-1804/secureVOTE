@@ -578,6 +578,7 @@ class ComplaintStatusUpdate(BaseModel):
 class SimulationRequest(BaseModel):
     preset: str = Field(default="DEMO_1000", pattern="^(DEMO_1000|DEMO_10000|DEMO_100000)$")
     election_name: str = Field(default="SecureVOTE Demo Election 2026")
+    election_id: str | None = None
 
 class SimulationResponse(BaseModel):
     election_id: str

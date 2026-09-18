@@ -244,12 +244,12 @@ python backend/standalone_verifier/verifier.py election_export.json
 
 All test suites execute deterministically without external network or service dependencies:
 
-### 1. Full Backend Test Suite (88 Tests)
+### 1. Full Backend Test Suite (Pytest)
 ```powershell
 cd D:\secureVOTE\backend
 .\venv\Scripts\pytest.exe tests/ -v
 ```
-*Result*: **88 passed** across 15 test files.
+*Result*: **100 passed** across 14 test files (including attack matrix and multi-election collision regression).
 
 ### 2. Firmware Native Test Suite (17 Tests)
 ```powershell
@@ -259,12 +259,12 @@ pio test -e native
 ```
 *Result*: **17 passed** across all state-machine, voting lifecycle, recovery, and persistence suites.
 
-### 3. Firmware Arduino Uno Production Build
+### 3. Firmware Arduino Uno Production Build (Build Target)
 ```powershell
 cd D:\secureVOTE\firmware
 pio run -e uno
 ```
-*Result*: **SUCCESS** (RAM: 53.6%, Flash: 45.8% on ATmega328P).
+*Result*: **1 BUILD TARGET — SUCCESS** (RAM: 53.6%, Flash: 45.8% on ATmega328P).
 
 ### 4. Dashboard Vitest Unit Suite (28 Tests)
 ```powershell
@@ -278,7 +278,7 @@ npm test -- --run
 cd D:\secureVOTE\dashboard
 npm run build
 ```
-*Result*: **SUCCESS** (41 static/dynamic pages compiled cleanly without errors).
+*Result*: **SUCCESS** (43 static/dynamic routes compiled cleanly without errors).
 
 ### 6. Standalone Verifier Test Suite (12 Tests)
 ```powershell
@@ -287,12 +287,12 @@ cd D:\secureVOTE\backend
 ```
 *Result*: **12 passed** (validates 100% database/ORM disconnection and all tamper-detection assertions).
 
-### 7. Attack Demonstration Suite (12 Tests)
+### 7. Attack Demonstration Suite (20 Tests)
 ```powershell
 cd D:\secureVOTE\backend
 .\venv\Scripts\pytest.exe tests/test_attacks.py -v
 ```
-*Result*: **12 passed** across all 12 documented attack vectors.
+*Result*: **20 passed** across all 20 documented attack vectors.
 
 ---
 

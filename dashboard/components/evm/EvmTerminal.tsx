@@ -36,9 +36,43 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
   useEffect(() => {
     const init = async () => {
       try {
-        const eData = await api.getElection(electionId, token || undefined);
+        let eData: any = null;
+        if (token) {
+          try {
+            eData = await api.getElection(electionId, token);
+          } catch {
+            // fallback to public transparency
+          }
+        }
+        if (!eData) {
+          const pub = await api.getTransparencyOverview(electionId);
+          const cands = await api.getTransparencyCandidates(electionId);
+          eData = {
+            id: pub.election_id,
+            name: pub.election_name,
+            title: pub.election_name,
+            state: pub.state,
+            candidates: cands,
+          };
+        }
+        if (!eData.candidates || eData.candidates.length === 0) {
+          try {
+            eData.candidates = await api.getTransparencyCandidates(electionId);
+          } catch {}
+        }
         setElection(eData);
-        const dData = await api.getDevices(electionId, token || undefined);
+
+        let dData: DeviceResponse[] = [];
+        if (token) {
+          try {
+            dData = await api.getDevices(electionId, token);
+          } catch {
+            // fallback
+          }
+        }
+        if (dData.length === 0) {
+          dData = await api.getTransparencyDevices(electionId);
+        }
         const dev = dData.find(d => d.id === deviceId);
         if (!dev) throw new Error("DEVICE_NOT_FOUND");
         setDevice(dev);
@@ -91,8 +125,45 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
     setLcdMessage("CANDIDATE SELECTED");
   };
 
+  const [isMockPoll, setIsMockPoll] = useState(false);
+  const [mockVotes, setMockVotes] = useState<Record<string, number>>({});
+  const [mockCleared, setMockCleared] = useState(false);
+
+  const totalMockVotes = Object.values(mockVotes).reduce((a, b) => a + b, 0);
+
+  const handleClearMockPoll = () => {
+    setMockVotes({});
+    setMockCleared(true);
+    setLcdMessage("UI DIAGNOSTIC MODE - DATA CLEARED");
+    setTimeout(() => {
+      setLcdMessage(isMockPoll ? "UI DIAGNOSTIC MODE - READY" : "READY - AWAITING SESSION");
+    }, 3000);
+  };
+
   const handleConfirm = async () => {
-    if (state !== "VOTE_CONFIRMED" || !selectedCandidate || !sessionToken) return;
+    if (state !== "VOTE_CONFIRMED" || !selectedCandidate) return;
+
+    if (isMockPoll) {
+      setState("VOTE_SUBMITTED");
+      setLcdMessage("UI DIAGNOSTIC — LOCAL ONLY (NO BACKEND)");
+      setMockVotes(prev => ({
+        ...prev,
+        [selectedCandidate]: (prev[selectedCandidate] || 0) + 1,
+      }));
+      setLastVoteHash(`DIAG-SLIP-${Date.now().toString(16).toUpperCase()}`);
+      setState("VOTE_COMPLETE");
+      setShowVvpat(true);
+
+      setTimeout(() => {
+        setShowVvpat(false);
+        setState("READY");
+        setSelectedCandidate(null);
+        setLcdMessage("UI DIAGNOSTIC MODE - READY");
+      }, 4000);
+      return;
+    }
+
+    if (!sessionToken) return;
 
     setState("VOTE_SUBMITTED");
     setLcdMessage("RECORDING VOTE...");
@@ -149,10 +220,50 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
               <h1 className="text-2xl font-bold text-slate-200 tracking-wider">EVM DIGITAL TWIN</h1>
               <div className="text-slate-400 font-mono text-sm mt-1">{deviceId} | {election?.title || "Loading..."}</div>
             </div>
-            <div className="bg-amber-500 text-slate-900 font-bold px-4 py-1 rounded-sm tracking-widest text-sm shadow-inner">
-              SIMULATION
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextMode = !isMockPoll;
+                  setIsMockPoll(nextMode);
+                  setState("READY");
+                  setSelectedCandidate(null);
+                  setLcdMessage(nextMode ? "UI DIAGNOSTIC MODE - READY" : "READY - AWAITING SESSION");
+                }}
+                className={`px-3 py-1 rounded text-xs font-bold transition-all border ${
+                  isMockPoll
+                    ? "bg-amber-500 text-slate-950 border-amber-400 font-mono shadow-md"
+                    : "bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600"
+                }`}
+              >
+                {isMockPoll ? "UI DIAGNOSTIC: ACTIVE" : "ENABLE UI DIAGNOSTIC"}
+              </button>
+              <div className="bg-amber-500 text-slate-950 font-bold px-3 py-1 rounded-sm tracking-widest text-xs shadow-inner">
+                SIMULATION
+              </div>
             </div>
           </div>
+
+          {isMockPoll && (
+            <div className="mb-4 bg-rose-950/40 border-2 border-rose-500/50 rounded-lg p-3 text-xs flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-rose-400 text-sm tracking-widest">⚠ UI DIAGNOSTIC MODE</span>
+                  <span className="text-slate-300 font-mono ml-2">{totalMockVotes} Local Test Interactions</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearMockPoll}
+                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded text-[11px] transition-colors"
+                >
+                  Clear Data (CLR)
+                </button>
+              </div>
+              <div className="text-rose-300 text-[10px] font-mono mt-1 border-t border-rose-500/30 pt-1">
+                Local-only test interaction • No ballot is persisted to the election backend
+              </div>
+            </div>
+          )}
 
           <EvmLCD message={lcdMessage} />
 
@@ -190,7 +301,7 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
         </div>
 
         {showVvpat && selectedCandData && (
-          <VVPATSlip candidate={selectedCandData} hash={lastVoteHash} />
+          <VVPATSlip candidate={selectedCandData} hash={lastVoteHash} isMockPoll={isMockPoll} />
         )}
 
       </div>

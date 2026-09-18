@@ -446,8 +446,56 @@ export const api = {
     return request<CandidateResponse[]>(`/api/transparency/elections/${electionId}/candidates`);
   },
 
+  async getTransparencyDevices(electionId: string): Promise<DeviceResponse[]> {
+    return request<DeviceResponse[]>(`/api/transparency/elections/${electionId}/devices`);
+  },
+
   async getTransparencyResults(electionId: string): Promise<any> {
     return request<any>(`/api/transparency/elections/${electionId}/results`);
+  },
+
+  async seedDemoElection(token?: string | null): Promise<{ status: string; election_id: string; state: string; message: string }> {
+    return request<{ status: string; election_id: string; state: string; message: string }>(
+      '/api/simulation/seed-demo',
+      { method: 'POST' },
+      token || undefined
+    );
+  },
+
+  // Geography & India Electoral Hierarchy
+  async getGeographyStates(): Promise<{ states: any[]; total: number }> {
+    return request<{ states: any[]; total: number }>('/api/geography/states');
+  },
+
+  async getGeographyState(code: string): Promise<any> {
+    return request<any>(`/api/geography/states/${code}`);
+  },
+
+  async getGeographyPC(pcId: string): Promise<any> {
+    return request<any>(`/api/geography/pc/${pcId}`);
+  },
+
+  async getGeographyMapData(): Promise<{ viewbox: string; title: string; features: any[] }> {
+    return request<{ viewbox: string; title: string; features: any[] }>('/api/geography/map-data');
+  },
+
+  // Dual-Mode Overseas / NRI Elector Simulation
+  async getOverseasFramework(): Promise<any> {
+    return request<any>('/api/overseas/framework');
+  },
+
+  async submitForm6A(data: any): Promise<any> {
+    return request<any>('/api/overseas/form6a', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async simulateConsularSession(data: any): Promise<any> {
+    return request<any>('/api/overseas/consular-simulate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   // Voting session (for EVM digital twin)

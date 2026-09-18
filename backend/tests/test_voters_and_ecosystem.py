@@ -235,6 +235,41 @@ async def test_transparency_endpoints(client: AsyncClient, admin_headers: dict):
     assert cand_resp.status_code == 200
     assert len(cand_resp.json()) == 2
 
+    # Register a device and test public transparency devices list
+    await client.post(
+        f"/api/elections/{election_id}/devices",
+        json={"id": "EVM-042", "name": "Transparency Test Unit"},
+        headers=admin_headers,
+    )
+    dev_resp = await client.get(f"/api/transparency/elections/{election_id}/devices")
+    assert dev_resp.status_code == 200
+    devs = dev_resp.json()
+    assert len(devs) == 1
+    assert devs[0]["id"] == "EVM-042"
+
+
+@pytest.mark.asyncio
+async def test_seed_demo_endpoint(client: AsyncClient):
+    """Test seed-demo endpoint provisions deterministic demo election EV-2026-001 in OPEN state."""
+    seed_resp = await client.post("/api/simulation/seed-demo")
+    assert seed_resp.status_code == 200
+    data = seed_resp.json()
+    assert data["status"] == "SUCCESS"
+    assert data["election_id"] == "EV-2026-001"
+    assert data["state"] == "OPEN"
+
+    # Verify transparency view sees the seeded election as OPEN
+    trans_resp = await client.get("/api/transparency/elections/EV-2026-001")
+    assert trans_resp.status_code == 200
+    assert trans_resp.json()["state"] == "OPEN"
+    assert trans_resp.json()["candidate_count"] == 4
+
+    # Verify devices are accessible
+    devs_resp = await client.get("/api/transparency/elections/EV-2026-001/devices")
+    assert devs_resp.status_code == 200
+    assert len(devs_resp.json()) == 4
+
+
 
 # ===========================================================================
 # 6. Deterministic Simulation Endpoint

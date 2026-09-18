@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import time
 import random
@@ -51,7 +52,30 @@ async def run_simulation(req: SimulationRequest, db: AsyncSession = Depends(get_
     if not preset_data:
         raise HTTPException(status_code=400, detail="Invalid preset")
 
-    election_id = f"EV-2026-SIM-{uuid.uuid4().hex[:6].upper()}"
+    existing_elections = set((await db.execute(select(Election.id))).scalars().all())
+    existing_candidates = set((await db.execute(select(Candidate.id))).scalars().all())
+    existing_devices = set((await db.execute(select(Device.id))).scalars().all())
+
+    num_cand = preset_data["candidates"]
+    num_dev = preset_data["devices"]
+
+    if getattr(req, "election_id", None):
+        election_id = req.election_id
+        if election_id in existing_elections:
+            raise HTTPException(status_code=409, detail=f"Election {election_id} already exists")
+        h = hashlib.sha256(election_id.encode()).hexdigest()[:4].upper()
+        cand_prefix = f"S{h}"
+    else:
+        sim_idx = 1
+        while (
+            f"EV-2026-SIM-{sim_idx:03d}" in existing_elections
+            or any(f"S{sim_idx:02d}-C{i+1:02d}" in existing_candidates for i in range(num_cand))
+            or any(f"EVM-S{sim_idx:02d}-{j+1:03d}" in existing_devices for j in range(num_dev))
+        ):
+            sim_idx += 1
+        election_id = f"EV-2026-SIM-{sim_idx:03d}"
+        cand_prefix = f"S{sim_idx:02d}" if sim_idx < 100 else f"S{sim_idx}"
+
     random.seed(election_id)
 
     # 1. Create Election
@@ -66,10 +90,9 @@ async def run_simulation(req: SimulationRequest, db: AsyncSession = Depends(get_
 
     # 2. Create Candidates
     candidates = []
-    num_cand = preset_data["candidates"]
     for i in range(num_cand):
         c = Candidate(
-            id=f"C{i+1:03d}",
+            id=f"{cand_prefix}-C{i+1:02d}",
             election_id=election_id,
             name=CANDIDATE_NAMES[i],
             party=PARTIES[i],
@@ -85,7 +108,7 @@ async def run_simulation(req: SimulationRequest, db: AsyncSession = Depends(get_
     for i in range(preset_data["stations"]):
         ps = PollingStation(
             election_id=election_id,
-            station_code=f"PS-{i+1:03d}",
+            station_code=f"PS-{cand_prefix}-{i+1:03d}",
             name=f"Simulated Station {i+1}",
             constituency=random.choice(CONSTITUENCIES),
             location="Simulation Area",
@@ -97,13 +120,13 @@ async def run_simulation(req: SimulationRequest, db: AsyncSession = Depends(get_
 
         for j in range(ps.assigned_devices):
             dev = Device(
-                id=f"EVM-{len(devices)+1:03d}",
+                id=f"EVM-{cand_prefix}-{len(devices)+1:03d}",
                 election_id=election_id,
                 name=f"Device {len(devices)+1}",
                 status="ACTIVE",
                 last_sequence_number=0,
                 total_votes_cast=0,
-                device_hash=hashlib.sha256(f"dev-{len(devices)+1}".encode()).hexdigest(),
+                device_hash=hashlib.sha256(f"dev-{cand_prefix}-{len(devices)+1}".encode()).hexdigest(),
                 registered_at=_utcnow(),
                 last_seen_at=_utcnow(),
             )
@@ -290,3 +313,16 @@ async def run_simulation(req: SimulationRequest, db: AsyncSession = Depends(get_
         duration_seconds=duration,
         status="COMPLETED"
     )
+
+
+@router.post("/seed-demo")
+async def seed_demo_endpoint(db: AsyncSession = Depends(get_db)):
+    """Idempotently seed the deterministic demo election in OPEN state."""
+    from scripts.seed_demo_election import seed_demo_election
+    await seed_demo_election(reset=False, session=db)
+    return {
+        "status": "SUCCESS",
+        "election_id": "EV-2026-001",
+        "state": "OPEN",
+        "message": "Deterministic demo election seeded and OPEN for EVM Digital Twin."
+    }

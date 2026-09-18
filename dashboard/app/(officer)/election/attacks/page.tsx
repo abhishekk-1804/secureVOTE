@@ -147,6 +147,86 @@ const INITIAL_ATTACKS: AttackScenario[] = [
     payload: { severity: "HIGH", anomaly: "BURST_VOTING_RATE", impact: "advisory_only" },
     status: "IDLE",
   },
+  {
+    id: 13,
+    name: "Voter Anonymity & RFID Credential De-anonymization",
+    category: "Cryptographic",
+    threat: "Adversary inspects ballot database attempting to correlate raw voter identity or RFID UID with cast vote.",
+    defense: "Ballot table schema stores zero voter credentials or RFID UIDs. HMAC-salted voter anonymization strictly breaks link to ballot row.",
+    expectedResult: "ANONYMIZED BALLOT ENFORCED (Zero voter PII column in ballot storage)",
+    payload: { query: "SELECT voter_credential FROM ballots", target: "raw_identity_correlation" },
+    status: "IDLE",
+  },
+  {
+    id: 14,
+    name: "Sequence Rollback & Non-Monotonic Counter",
+    category: "Protocol",
+    threat: "Attacker attempts to submit ballot with sequence number less than or equal to last accepted device counter.",
+    defense: "Monotonic counter check (sequence_number > device.last_sequence_number) rejects non-monotonic counters.",
+    expectedResult: "REPLAY REJECTED (HTTP 409: sequence_number <= last accepted)",
+    payload: { device_id: "EVM-001", last_sequence: 2, submitted_sequence: 1 },
+    status: "IDLE",
+  },
+  {
+    id: 15,
+    name: "Candidate Insertion Post-Freeze Violation",
+    category: "Lifecycle",
+    threat: "Malicious administrator attempts to insert or modify candidates after configuration freeze.",
+    defense: "Election lifecycle guard restricts candidate mutations strictly to DRAFT state; rejects requests in LOCKED/OPEN/CLOSED states.",
+    expectedResult: "LIFECYCLE REJECTED (HTTP 400: Election configuration locked)",
+    payload: { state: "OPEN", action: "POST /api/elections/{id}/candidates", candidate: "C999" },
+    status: "IDLE",
+  },
+  {
+    id: 16,
+    name: "Orphaned Audit Entry & Detached Hash Chain",
+    category: "Cryptographic",
+    threat: "Adversary injects a rogue audit log entry with detached sequence or invalid previous_hash link.",
+    defense: "Independent audit chain verification detects broken hash link and flags tampering at injected sequence.",
+    expectedResult: "AUDIT VERIFICATION FAILED (Broken hash chain at injected sequence)",
+    payload: { sequence: 99, previous_hash: "00000000000000000000000000000000" },
+    status: "IDLE",
+  },
+  {
+    id: 17,
+    name: "Cross-Constituency Ballot Boundary Spoofing",
+    category: "Anomaly",
+    threat: "EVM terminal or operator attempts to cast ballot for a candidate from another assembly constituency.",
+    defense: "Candidate validation verifies candidate_id belongs strictly to the target election and registered constituency.",
+    expectedResult: "CANDIDATE REJECTED (HTTP 404: Candidate not found in this election)",
+    payload: { target_election: "EV-2026-001", rogue_candidate: "C999" },
+    status: "IDLE",
+  },
+  {
+    id: 18,
+    name: "Genesis Block Hash Substitution Attack",
+    category: "Cryptographic",
+    threat: "Adversary modifies sequence #0 genesis audit entry to forge initial election state root.",
+    defense: "Genesis entry enforces previous_hash of 64 zeros and matches canonical genesis digest. Modification invalidates entire tree.",
+    expectedResult: "AUDIT VERIFICATION FAILED (Broken hash chain at sequence #0)",
+    payload: { sequence: 0, tampered_event: "{\"genesis\": false}" },
+    status: "IDLE",
+  },
+  {
+    id: 19,
+    name: "Cross-Election Session Token Replay",
+    category: "Protocol",
+    threat: "Adversary intercepts valid voting session token from Election A and attempts ballot submission in Election B.",
+    defense: "Voting session is cryptographically bound to specific election_id and device_id; cross-election submission is rejected.",
+    expectedResult: "DEVICE MISMATCH (HTTP 409: Device not bound to session)",
+    payload: { session_election: "EV-2026-001", target_election: "EV-2026-002" },
+    status: "IDLE",
+  },
+  {
+    id: 20,
+    name: "Single-Use Session Double-Ballot Replay",
+    category: "Lifecycle",
+    threat: "Attacker reuses a single-use session token to cast a second ballot after the session is already consumed.",
+    defense: "Session state transitions from AUTHORIZED to VOTED within atomic transaction; subsequent request receives HTTP 409.",
+    expectedResult: "REQUEST REJECTED (HTTP 409: Session status is VOTED)",
+    payload: { session_token: "tok_sim_replay", attempt: 2 },
+    status: "IDLE",
+  },
 ];
 
 export default function AttacksDemoPage() {
@@ -219,7 +299,7 @@ export default function AttacksDemoPage() {
             Attack Demonstration Center
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Controlled verification of SecureVOTE defense-in-depth mechanisms across 12 attack vectors
+            Controlled verification of SecureVOTE defense-in-depth mechanisms across 20 attack vectors
           </p>
         </div>
 
@@ -240,38 +320,38 @@ export default function AttacksDemoPage() {
             loading={runningAll}
           >
             <Play className="w-3.5 h-3.5 mr-1" />
-            Execute All 12 Vectors
+            Execute All 20 Vectors
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card padding="sm" className="bg-slate-900 border-slate-800">
-          <span className="text-xs text-slate-400">Total Attack Vectors</span>
-          <p className="text-2xl font-bold text-white mt-1">12</p>
-          <span className="text-[10px] text-slate-500">Documented security threats</span>
+          <span className="text-xs text-slate-400">Attack Scenarios</span>
+          <p className="text-2xl font-bold text-white mt-1">{attacks.length}</p>
+          <span className="text-[10px] text-slate-500">Documented security test cases</span>
         </Card>
         <Card padding="sm" className="bg-slate-900 border-slate-800">
-          <span className="text-xs text-slate-400">Vectors Defended</span>
+          <span className="text-xs text-slate-400">Controlled Tests Passed</span>
           <p className="text-2xl font-bold text-emerald-400 mt-1">
-            {defendedCount} / 12
+            {defendedCount} / {attacks.length}
           </p>
           <span className="text-[10px] text-slate-500">Simulated test assertions</span>
         </Card>
         <Card padding="sm" className="bg-slate-900 border-slate-800">
-          <span className="text-xs text-slate-400">Defense Rate</span>
+          <span className="text-xs text-slate-400">Detection / Rejection Rate (Tested)</span>
           <p className="text-2xl font-bold text-blue-400 mt-1">
-            {Math.round((defendedCount / 12) * 100)}%
+            {Math.round((defendedCount / (attacks.length || 1)) * 100)}%
           </p>
-          <span className="text-[10px] text-slate-500">Zero unhandled breaches</span>
+          <span className="text-[10px] text-slate-500">100% in tested scenarios — controlled simulation only</span>
         </Card>
         <Card padding="sm" className="bg-slate-900 border-slate-800">
-          <span className="text-xs text-slate-400">Environment Isolation</span>
+          <span className="text-xs text-slate-400">Scope</span>
           <p className="text-xs font-semibold text-amber-400 mt-2 flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            ISOLATED TEST SANDBOX
+            CONTROLLED SIMULATION ONLY
           </p>
-          <span className="text-[10px] text-slate-500">Canonical data uncorrupted</span>
+          <span className="text-[10px] text-slate-500">Does not imply universal security</span>
         </Card>
       </div>
 

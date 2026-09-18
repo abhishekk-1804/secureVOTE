@@ -46,7 +46,20 @@ export default function EvmControlPanel({ onInitSession, onConfirm, onCancel, ca
             className="bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-100"
             value={p} onChange={e => setP(e.target.value)}
           />
-          <button type="submit" className="bg-slate-700 text-white font-bold py-2 rounded text-sm hover:bg-slate-600">LOGIN & INIT</button>
+          <button
+            type="button"
+            onClick={() => { setU("officer"); setP("OfficerSecurePassword123!"); }}
+            className="text-xs text-amber-400 hover:text-amber-300 text-left underline underline-offset-2"
+          >
+            Use Local Demo Credentials (officer / demo-only)
+          </button>
+          <div className="text-[10px] text-rose-400 bg-rose-950/30 border border-rose-500/30 rounded p-1.5 font-mono">
+            ⚠ LOCAL DEMO CREDENTIALS — Synthetic environment only. Never use in production.
+          </div>
+          <div className="flex gap-2">
+            <button type="submit" className="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded text-sm transition-colors">LOGIN & INIT</button>
+            <button type="button" onClick={() => setShowLogin(false)} className="px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-sm">Cancel</button>
+          </div>
         </form>
       ) : (
         <button
