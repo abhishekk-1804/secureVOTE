@@ -107,7 +107,11 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="pt-6 mt-6 border-t border-slate-800">
+      <div className="pt-6 mt-6 border-t border-slate-800 space-y-3">
+        <div className="px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded text-[10px] font-mono text-amber-300 flex items-center justify-between">
+          <span className="font-semibold">SIMULATION PROTOTYPE</span>
+          <span className="text-amber-400/80">NOT ECI</span>
+        </div>
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3 text-xs text-slate-400">
           <div className="flex items-center gap-1.5 font-semibold text-slate-300 mb-1">
             <Info className="w-3.5 h-3.5 text-blue-400" />

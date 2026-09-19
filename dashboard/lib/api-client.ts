@@ -79,7 +79,7 @@ async function request<T>(
   });
 
   if (response.status === 401) {
-    if (onUnauthorizedCallback) {
+    if (token && onUnauthorizedCallback) {
       onUnauthorizedCallback();
     }
     throw new ApiError(401, "Session expired or unauthorized. Please log in again.");
@@ -122,7 +122,10 @@ export const api = {
 
   // Elections
   async getElections(token?: string | null): Promise<ElectionResponse[]> {
-    return request<ElectionResponse[]>("/api/elections", {}, token);
+    const res = await request<any>("/api/elections", {}, token);
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.elections)) return res.elections;
+    return [];
   },
 
   async getElection(
@@ -228,11 +231,14 @@ export const api = {
     electionId: string,
     token?: string | null
   ): Promise<AuditEntryResponse[]> {
-    return request<AuditEntryResponse[]>(
+    const res = await request<any>(
       `/api/elections/${electionId}/audit`,
       {},
       token
     );
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.entries)) return res.entries;
+    return [];
   },
 
   async verifyAuditChain(

@@ -11,11 +11,15 @@ export class ApiError extends Error {
 }
 
 export function formatApiError(error: unknown): string {
-  if (error instanceof ApiError) {
-    if (error.data?.detail) {
-      if (typeof error.data.detail === 'string') return error.data.detail;
-      if (Array.isArray(error.data.detail)) {
-        return error.data.detail
+  if (
+    error instanceof ApiError ||
+    (typeof error === 'object' && error !== null && ('data' in error || (error as any).name === 'ApiError'))
+  ) {
+    const apiErr = error as any;
+    if (apiErr.data?.detail) {
+      if (typeof apiErr.data.detail === 'string') return apiErr.data.detail;
+      if (Array.isArray(apiErr.data.detail)) {
+        return apiErr.data.detail
           .map((e: any) => {
             if (typeof e === 'string') return e;
             if (typeof e === 'object' && e !== null) {
@@ -25,26 +29,26 @@ export function formatApiError(error: unknown): string {
           })
           .join('. ');
       }
-      if (typeof error.data.detail === 'object' && error.data.detail !== null) {
-        if ('msg' in error.data.detail && typeof error.data.detail.msg === 'string') {
-          return error.data.detail.msg;
+      if (typeof apiErr.data.detail === 'object' && apiErr.data.detail !== null) {
+        if ('msg' in apiErr.data.detail && typeof apiErr.data.detail.msg === 'string') {
+          return apiErr.data.detail.msg;
         }
-        if ('message' in error.data.detail && typeof error.data.detail.message === 'string') {
-          return error.data.detail.message;
+        if ('message' in apiErr.data.detail && typeof apiErr.data.detail.message === 'string') {
+          return apiErr.data.detail.message;
         }
         try {
-          return JSON.stringify(error.data.detail);
+          return JSON.stringify(apiErr.data.detail);
         } catch {
-          return error.message || 'An unexpected error occurred. Please try again.';
+          return apiErr.message || 'An unexpected error occurred. Please try again.';
         }
       }
-      const str = String(error.data.detail);
-      return str === '[object Object]' ? (error.message || 'An unexpected error occurred.') : str;
+      const str = String(apiErr.data.detail);
+      return str === '[object Object]' ? (apiErr.message || 'An unexpected error occurred.') : str;
     }
-    if (error.data?.message && typeof error.data.message === 'string') {
-      return error.data.message;
+    if (apiErr.data?.message && typeof apiErr.data.message === 'string') {
+      return apiErr.data.message;
     }
-    return error.message || 'An unexpected API error occurred.';
+    return apiErr.message || 'An unexpected API error occurred.';
   }
   if (error instanceof Error) return error.message;
   if (typeof error === 'string') return error;

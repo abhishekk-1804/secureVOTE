@@ -258,11 +258,11 @@ async def test_seed_demo_endpoint(client: AsyncClient):
     assert data["election_id"] == "EV-2026-001"
     assert data["state"] == "OPEN"
 
-    # Verify transparency view sees the seeded election as OPEN
+    # Verify transparency view sees the seeded election as OPEN (4 candidates + NOTA)
     trans_resp = await client.get("/api/transparency/elections/EV-2026-001")
     assert trans_resp.status_code == 200
     assert trans_resp.json()["state"] == "OPEN"
-    assert trans_resp.json()["candidate_count"] == 4
+    assert trans_resp.json()["candidate_count"] == 5
 
     # Verify devices are accessible
     devs_resp = await client.get("/api/transparency/elections/EV-2026-001/devices")

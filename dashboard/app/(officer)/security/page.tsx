@@ -28,96 +28,151 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const SECURITY_CONTROLS = [
+export type SecurityCategory = "ALL" | "PREVENTION" | "DETECTION" | "AUDITABILITY" | "VERIFICATION";
+
+export interface SecurityControl {
+  id: number;
+  category: "PREVENTION" | "DETECTION" | "AUDITABILITY" | "VERIFICATION";
+  name: string;
+  mechanism: string;
+  detection: string;
+  status: "ACTIVE";
+}
+
+const SECURITY_CONTROLS: SecurityControl[] = [
+  // PREVENTION
   {
     id: 1,
-    name: "Audit Log Tamper Protection",
-    mechanism: "Cryptographic SHA-256 Hash Chain",
-    detection: "AUDIT VERIFICATION FAILED on any historical mutation",
+    category: "PREVENTION",
+    name: "Duplicate Session & Double Voting Prevention",
+    mechanism: "Unique DB Constraint on (election_id, voter_credential)",
+    detection: "REQUEST REJECTED (HTTP 409) on repeated token presentation",
     status: "ACTIVE",
   },
   {
     id: 2,
-    name: "Configuration Freezing",
-    mechanism: "Frozen Candidate Slate Hash in DB & EEPROM",
-    detection: "CONFIGURATION HASH MISMATCH post-lock",
+    category: "PREVENTION",
+    name: "Closed-Election Ingestion Guard",
+    mechanism: "FSM State Enforcement in Ballot Ingestion Pipeline",
+    detection: "REQUEST REJECTED (HTTP 409) unless election is in OPEN state",
     status: "ACTIVE",
   },
   {
     id: 3,
-    name: "Duplicate Session Prevention",
-    mechanism: "Unique DB Constraint on (election_id, voter_credential)",
-    detection: "REQUEST REJECTED (HTTP 409) on second attempt",
+    category: "PREVENTION",
+    name: "Message Replay Prevention",
+    mechanism: "Strict Monotonic Sequence Counter per Hardware Unit in EEPROM",
+    detection: "REPLAY REJECTED (HTTP 409) if packet sequence <= last_seen",
     status: "ACTIVE",
   },
   {
     id: 4,
-    name: "Closed-Election Protection",
-    mechanism: "FSM State Enforcement in Ballot Service",
-    detection: "REQUEST REJECTED (HTTP 409) if election is not OPEN",
+    category: "PREVENTION",
+    name: "Hardware Device Whitelisting",
+    mechanism: "Pre-registered Device Authentication & Revocation Check",
+    detection: "ACCESS REJECTED (HTTP 403) for unknown or revoked hardware units",
     status: "ACTIVE",
   },
   {
     id: 5,
-    name: "Physical Enclosure Tamper Switch",
-    mechanism: "Hardware Microswitch + Non-Volatile EEPROM Latch",
-    detection: "TAMPER_DETECTED event and device SUSPENDED",
+    category: "PREVENTION",
+    name: "Voter Identity-to-Ballot Linkability Prevention",
+    mechanism: "Keyed HMAC-SHA256 Pseudonymization (Zero Raw Biometric/UID Persistence)",
+    detection: "RFID AUTHENTICATION != VOTER ELIGIBILITY enforcement",
     status: "ACTIVE",
   },
+
+  // DETECTION
   {
     id: 6,
-    name: "Independent Exact Reconciliation",
-    mechanism: "Zero Drift Check: sum(cand) == total == sum(dev)",
-    detection: "RECONCILIATION FAILURE on any numerical delta",
+    category: "DETECTION",
+    name: "Physical Enclosure Tamper Detection",
+    mechanism: "Hardware Microswitch + Non-Volatile EEPROM Latch",
+    detection: "TAMPER_DETECTED event logged and device placed in SUSPENDED state",
     status: "ACTIVE",
   },
   {
     id: 7,
-    name: "Message Replay Protection",
-    mechanism: "Monotonic Sequence Counter per Device in EEPROM",
-    detection: "REPLAY REJECTED (HTTP 409) if seq <= last_seen_sequence",
-    status: "ACTIVE",
-  },
-  {
-    id: 8,
-    name: "Device Whitelisting",
-    mechanism: "Pre-registered Device Authentication Check",
-    detection: "DEVICE REJECTED (HTTP 403) for unknown or revoked units",
-    status: "ACTIVE",
-  },
-  {
-    id: 9,
-    name: "Result Manifest Asymmetric Signing",
-    mechanism: "Ed25519 Elliptic Curve Signatures",
-    detection: "SIGNATURE_INVALID on tampered manifest or unauthorized key",
-    status: "ACTIVE",
-  },
-  {
-    id: 10,
-    name: "Audit-Root External Anchoring",
-    mechanism: "SHA-256 Root Hash External Proof Commitments",
-    detection: "ANCHOR_MISMATCH on historical tree divergence",
-    status: "ACTIVE",
-  },
-  {
-    id: 11,
-    name: "Zero-Knowledge Identity Abstraction",
-    mechanism: "Keyed HMAC-SHA256 Pseudonymization (Zero Raw UID Persistence)",
-    detection: "RFID AUTHENTICATION != VOTER ELIGIBILITY enforcement",
-    status: "ACTIVE",
-  },
-  {
-    id: 12,
+    category: "DETECTION",
     name: "Advisory Anomaly Detection Engine",
-    mechanism: "6 Deterministic Rules (Rate bursts, sequence gaps, rejections)",
+    mechanism: "6 Deterministic Heuristics (Rate bursts, sequence gaps, repeated rejections)",
     detection: "ADVISORY FINDING  -  REQUIRES HUMAN REVIEW (Non-blocking)",
     status: "ACTIVE",
   },
   {
+    id: 8,
+    category: "DETECTION",
+    name: "Hardware Telemetry & Heartbeat Liveness",
+    mechanism: "Periodic Status Ping with Sequence Tracking",
+    detection: "STATION_DESYNC or OFFLINE alert surfaced in dashboard",
+    status: "ACTIVE",
+  },
+
+  // AUDITABILITY
+  {
+    id: 9,
+    category: "AUDITABILITY",
+    name: "Append-Only Audit Log Hash Chain",
+    mechanism: "Cryptographic SHA-256 Chaining (Tamper-Evident Historical Record)",
+    detection: "AUDIT VERIFICATION FAILED on any historical record deletion or mutation",
+    status: "ACTIVE",
+  },
+  {
+    id: 10,
+    category: "AUDITABILITY",
+    name: "Audit-Root External Anchoring",
+    mechanism: "Cryptographic Root Hash Commitments (External Immutable Proofs)",
+    detection: "ANCHOR_MISMATCH on historical tree divergence or fork",
+    status: "ACTIVE",
+  },
+  {
+    id: 11,
+    category: "AUDITABILITY",
+    name: "Presiding Officer Chronological Diary",
+    mechanism: "System & Operational Event Trail (Statutory Rule 49V Analogue)",
+    detection: "EVENT_SEQUENCE_GAP alert if expected milestones missing",
+    status: "ACTIVE",
+  },
+
+  // VERIFICATION
+  {
+    id: 12,
+    category: "VERIFICATION",
+    name: "Configuration Freezing & Roster Verification",
+    mechanism: "Frozen Candidate Slate SHA-256 Fingerprint in DB & EEPROM",
+    detection: "CONFIGURATION HASH MISMATCH on candidate order/name alteration",
+    status: "ACTIVE",
+  },
+  {
     id: 13,
-    name: "Machine-Verifiable Independent Verification",
-    mechanism: "Pure Python Verifier with DB-Disconnected Proof",
-    detection: "Typed 12-point failure codes on any corrupted export data",
+    category: "VERIFICATION",
+    name: "Zero-Drift Mathematical Reconciliation",
+    mechanism: "Exact Equation Proof: sum(candidate_votes) == total_ballots == sum(device_votes)",
+    detection: "RECONCILIATION FAILURE if delta != 0 across counting tables",
+    status: "ACTIVE",
+  },
+  {
+    id: 14,
+    category: "VERIFICATION",
+    name: "Result Manifest Asymmetric Digital Signing",
+    mechanism: "Ed25519 Elliptic Curve Signatures over Certified Result Manifest",
+    detection: "SIGNATURE_INVALID on tampered tallies or untrusted key presentation",
+    status: "ACTIVE",
+  },
+  {
+    id: 15,
+    category: "VERIFICATION",
+    name: "Machine-Verifiable Independent Verifier",
+    mechanism: "Pure Python Verifier on Export Envelope (Database-Disconnected)",
+    detection: "Typed 12-point failure codes if mathematical invariants fail",
+    status: "ACTIVE",
+  },
+  {
+    id: 16,
+    category: "VERIFICATION",
+    name: "VVPAT Paper Slip Sample Reconciliation",
+    mechanism: "Mandatory Random 5-Station Paper Slip Audit (Rule 56D Analogue)",
+    detection: "SLIP_COUNT_DISCREPANCY flags physical-to-electronic mismatch",
     status: "ACTIVE",
   },
 ];
@@ -128,6 +183,7 @@ export default function SecurityCenterPage() {
   const [devices, setDevices] = useState<DeviceResponse[]>([]);
   const [tamperEvents, setTamperEvents] = useState<AuditEntryResponse[]>([]);
   const [anomalies, setAnomalies] = useState<AdvisoryFinding[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<SecurityCategory>("ALL");
   const [rfidCard, setRfidCard] = useState<string>("CARD-VALID-01");
   const [rfidDeviceId, setRfidDeviceId] = useState<string>("EVM-001");
   const [rfidResult, setRfidResult] = useState<RFIDTapResponse | null>(null);
@@ -136,17 +192,22 @@ export default function SecurityCenterPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSecurityData = async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const [healthData, devList, auditEntries] = await Promise.all([
-        api.getHealth(),
+        api.getHealth().catch(() => null),
         api.getDevices("EV-2026-001", token).catch(() => []),
         api.getAuditLog("EV-2026-001", token).catch(() => []),
       ]);
-      setHealth(healthData);
-      setDevices(devList);
-      const tampers = auditEntries.filter(
+      if (healthData) setHealth(healthData);
+      setDevices(Array.isArray(devList) ? devList : []);
+      const entries = Array.isArray(auditEntries) ? auditEntries : [];
+      const tampers = entries.filter(
         (e) =>
           e.event_type === "TAMPER_DETECTED" ||
           (e.event_data && e.event_data.includes("SUSPENDED"))
@@ -155,7 +216,7 @@ export default function SecurityCenterPage() {
 
       try {
         const anoData = await api.getElectionAnomalies("EV-2026-001", token);
-        setAnomalies(anoData.findings || []);
+        setAnomalies(Array.isArray(anoData?.findings) ? anoData.findings : []);
       } catch {
         setAnomalies([]);
       }
@@ -185,7 +246,11 @@ export default function SecurityCenterPage() {
   };
 
   useEffect(() => {
-    fetchSecurityData();
+    if (token) {
+      fetchSecurityData();
+    } else {
+      setLoading(false);
+    }
   }, [token]);
 
   const suspendedDevices = devices.filter((d) => d.status === "SUSPENDED");
@@ -503,30 +568,67 @@ export default function SecurityCenterPage() {
 
       {/* Defense-in-Depth Verification Matrix */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-        <h3 className="text-sm font-bold text-white mb-2">
-          Security Controls & Anomaly Detection Matrix
-        </h3>
-        <p className="text-xs text-slate-400 mb-5">
-          Each threat is guarded by an independent architectural mechanism verified by the
-          test suite:
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-sm font-bold text-white">
+              Security Controls &amp; Anomaly Detection Matrix
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Partitioned defense-in-depth controls categorized by enforcement layer
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {(["ALL", "PREVENTION", "DETECTION", "AUDITABILITY", "VERIFICATION"] as SecurityCategory[]).map((cat) => {
+              const count = cat === "ALL" ? SECURITY_CONTROLS.length : SECURITY_CONTROLS.filter(c => c.category === cat).length;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-2.5 py-1 rounded text-xs font-semibold font-mono transition-colors border ${
+                    selectedCategory === cat
+                      ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                      : "bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200"
+                  }`}
+                >
+                  {cat} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 uppercase font-semibold">
               <tr>
                 <th className="py-2.5 px-4">#</th>
+                <th className="py-2.5 px-4">Category</th>
                 <th className="py-2.5 px-4">Threat / Vector</th>
                 <th className="py-2.5 px-4">Mitigation Mechanism</th>
-                <th className="py-2.5 px-4">Expected Backend Detection</th>
+                <th className="py-2.5 px-4">Expected Detection / Proof</th>
                 <th className="py-2.5 px-4 text-center">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {SECURITY_CONTROLS.map((ctrl) => (
+              {SECURITY_CONTROLS.filter((c) => selectedCategory === "ALL" || c.category === selectedCategory).map((ctrl) => (
                 <tr key={ctrl.id} className="hover:bg-slate-800/40 transition">
                   <td className="py-3 px-4 font-mono text-slate-500">
-                    0{ctrl.id}
+                    {ctrl.id.toString().padStart(2, "0")}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                        ctrl.category === "PREVENTION"
+                          ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                          : ctrl.category === "DETECTION"
+                          ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                          : ctrl.category === "AUDITABILITY"
+                          ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                          : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      }`}
+                    >
+                      {ctrl.category}
+                    </span>
                   </td>
                   <td className="py-3 px-4 font-semibold text-white">
                     {ctrl.name}

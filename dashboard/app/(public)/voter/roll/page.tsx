@@ -20,83 +20,109 @@ import {
   FileText,
 } from "lucide-react";
 
+const DEMO_VOTERS: VoterResponse[] = [
+  {
+    id: "1",
+    election_id: "EV-2026-001",
+    voter_id_number: "VTR-00101",
+    name: "Aarav Sharma",
+    date_of_birth: "1994-05-12",
+    constituency: "Bengaluru Central (Karnataka)",
+    polling_station_id: "PS-001",
+    eligibility_status: "ELIGIBLE",
+    registration_status: "VERIFIED",
+    has_voted: true,
+    registered_at: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    election_id: "EV-2026-001",
+    voter_id_number: "VTR-00102",
+    name: "Meera Patel",
+    date_of_birth: "1988-11-23",
+    constituency: "Mumbai South (Maharashtra)",
+    polling_station_id: "PS-002",
+    eligibility_status: "ELIGIBLE",
+    registration_status: "VERIFIED",
+    has_voted: false,
+    registered_at: new Date().toISOString(),
+  },
+  {
+    id: "3",
+    election_id: "EV-2026-001",
+    voter_id_number: "VTR-00103",
+    name: "Rohan Iyer",
+    date_of_birth: "2001-02-17",
+    constituency: "New Delhi (NCT)",
+    polling_station_id: "PS-003",
+    eligibility_status: "ELIGIBLE",
+    registration_status: "VERIFIED",
+    has_voted: false,
+    registered_at: new Date().toISOString(),
+  },
+  {
+    id: "4",
+    election_id: "EV-2026-001",
+    voter_id_number: "VTR-00104",
+    name: "Pooja Verma",
+    date_of_birth: "1997-09-30",
+    constituency: "Varanasi (Uttar Pradesh)",
+    polling_station_id: "PS-001",
+    eligibility_status: "ELIGIBLE",
+    registration_status: "VERIFIED",
+    has_voted: true,
+    registered_at: new Date().toISOString(),
+  },
+  {
+    id: "5",
+    election_id: "EV-2026-001",
+    voter_id_number: "VTR-00105",
+    name: "Debashis Banerjee",
+    date_of_birth: "1985-07-14",
+    constituency: "Kolkata Dakshin (West Bengal)",
+    polling_station_id: "PS-004",
+    eligibility_status: "ELIGIBLE",
+    registration_status: "VERIFIED",
+    has_voted: false,
+    registered_at: new Date().toISOString(),
+  },
+];
+
 export default function ElectoralRollPage() {
   const { election, loading: electionLoading } = useActiveElection();
-  const [voters, setVoters] = useState<VoterResponse[]>([]);
+  const [voters, setVoters] = useState<VoterResponse[]>(DEMO_VOTERS);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedConstituency, setSelectedConstituency] = useState("ALL");
   const [loading, setLoading] = useState(false);
+  const [lookupNotice, setLookupNotice] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadVoters() {
-      if (!election) return;
-      setLoading(true);
-      try {
-        // Fetch synthetic voters registered for this election
-        const list = await api.getVoters(election.id, "public-view");
-        setVoters(list);
-      } catch {
-        // Fallback demo dataset if unauthenticated or endpoint restricted
-        setVoters([
-          {
-            id: "1",
-            election_id: election?.id || "EV-2026-001",
-            voter_id_number: "VTR-00101",
-            name: "Aarav Sharma",
-            date_of_birth: "1994-05-12",
-            constituency: "North District",
-            polling_station_id: "PS-001",
-            eligibility_status: "ELIGIBLE",
-            registration_status: "VERIFIED",
-            has_voted: true,
-            registered_at: new Date().toISOString(),
-          },
-          {
-            id: "2",
-            election_id: election?.id || "EV-2026-001",
-            voter_id_number: "VTR-00102",
-            name: "Meera Patel",
-            date_of_birth: "1988-11-23",
-            constituency: "Central District",
-            polling_station_id: "PS-002",
-            eligibility_status: "ELIGIBLE",
-            registration_status: "VERIFIED",
-            has_voted: false,
-            registered_at: new Date().toISOString(),
-          },
-          {
-            id: "3",
-            election_id: election?.id || "EV-2026-001",
-            voter_id_number: "VTR-00103",
-            name: "Rohan Iyer",
-            date_of_birth: "2001-02-17",
-            constituency: "South District",
-            polling_station_id: "PS-003",
-            eligibility_status: "ELIGIBLE",
-            registration_status: "VERIFIED",
-            has_voted: false,
-            registered_at: new Date().toISOString(),
-          },
-          {
-            id: "4",
-            election_id: election?.id || "EV-2026-001",
-            voter_id_number: "VTR-00104",
-            name: "Pooja Verma",
-            date_of_birth: "1997-09-30",
-            constituency: "North District",
-            polling_station_id: "PS-001",
-            eligibility_status: "ELIGIBLE",
-            registration_status: "VERIFIED",
-            has_voted: true,
-            registered_at: new Date().toISOString(),
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
+  // The public electoral roll browser initializes with the simulated Indian electors dataset.
+  // Individual real-time verification lookups are performed on-demand via public api.lookupVoter.
+
+  const handleLookup = async () => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setLookupNotice(null);
+      return;
     }
-    loadVoters();
-  }, [election]);
+    setLoading(true);
+    setLookupNotice(null);
+    try {
+      const elId = election?.id || "EV-2026-001";
+      const result = await api.lookupVoter(elId, q);
+      if (result) {
+        setVoters((prev) => {
+          const exists = prev.some((v) => v.voter_id_number === result.voter_id_number);
+          return exists ? prev : [result, ...prev];
+        });
+        setLookupNotice(`Live record found for ${result.name} (${result.voter_id_number})`);
+      }
+    } catch {
+      setLookupNotice(`No backend database record found for "${q}". Filtered local demonstrator roll.`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredVoters = voters.filter((v) => {
     const matchesSearch =
@@ -135,29 +161,52 @@ export default function ElectoralRollPage() {
 
       <Card>
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div className="w-full sm:w-72">
+          <div className="w-full sm:flex-1 flex gap-2">
             <Input
-              placeholder="Search by Name or Voter ID..."
+              placeholder="Search by Name or Voter ID (e.g., VTR-00101)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLookup()}
             />
+            <Button
+              variant="secondary"
+              onClick={handleLookup}
+              disabled={loading}
+              className="shrink-0"
+            >
+              <Search className="w-4 h-4 mr-1.5" />
+              {loading ? "Searching..." : "Lookup"}
+            </Button>
           </div>
-          <div className="w-full sm:w-56">
+          <div className="w-full sm:w-64">
             <Select
               value={selectedConstituency}
               onChange={(e) => setSelectedConstituency(e.target.value)}
               options={[
                 { value: "ALL", label: "All Constituencies" },
-                { value: "North District", label: "North District" },
-                { value: "South District", label: "South District" },
-                { value: "East District", label: "East District" },
-                { value: "West District", label: "West District" },
-                { value: "Central District", label: "Central District" },
+                { value: "Bengaluru Central (Karnataka)", label: "Bengaluru Central (Karnataka)" },
+                { value: "Mumbai South (Maharashtra)", label: "Mumbai South (Maharashtra)" },
+                { value: "New Delhi (NCT)", label: "New Delhi (NCT)" },
+                { value: "Varanasi (Uttar Pradesh)", label: "Varanasi (Uttar Pradesh)" },
+                { value: "Kolkata Dakshin (West Bengal)", label: "Kolkata Dakshin (West Bengal)" },
               ]}
             />
           </div>
         </div>
       </Card>
+
+      {lookupNotice && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 flex items-center justify-between">
+          <span>{lookupNotice}</span>
+          <button
+            type="button"
+            onClick={() => setLookupNotice(null)}
+            className="text-blue-600 hover:text-blue-900 font-bold ml-2"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="flex justify-between items-center text-xs text-slate-500 px-1">
@@ -184,7 +233,7 @@ export default function ElectoralRollPage() {
                   </div>
                   <p className="text-sm font-semibold text-slate-900">{v.name}</p>
                   <p className="text-xs text-slate-500">
-                    Constituency: {v.constituency} â€¢ Polling Station: {v.polling_station_id || "Unassigned"}
+                    Constituency: {v.constituency} • Polling Station: {v.polling_station_id || "Unassigned"}
                   </p>
                 </div>
 

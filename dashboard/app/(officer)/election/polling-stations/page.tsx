@@ -42,7 +42,11 @@ export default function PollingStationsPage() {
     setLoading(true);
     try {
       await api.createPollingStation(selectedElection.id, {
-        code, name, constituency, location, officer_in_charge: officer, status: "OFFLINE"
+        station_code: code,
+        name,
+        constituency,
+        location,
+        officer_name: officer || undefined,
       }, token);
       await loadStations();
       setCode(""); setName(""); setConstituency(""); setLocation(""); setOfficer("");

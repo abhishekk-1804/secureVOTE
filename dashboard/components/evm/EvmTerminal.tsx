@@ -101,6 +101,11 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
       }
 
       if (!currentToken) {
+        if (isMockPoll) {
+          setState("CANDIDATE_SELECTION");
+          setLcdMessage("SELECT CANDIDATE");
+          return;
+        }
         setLcdMessage("OFFICER LOGIN REQUIRED");
         return;
       }
@@ -140,6 +145,47 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
     }, 3000);
   };
 
+function playEvmBeep() {
+  try {
+    if (typeof window !== "undefined") {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1000, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.2);
+      }
+    }
+  } catch {
+    // Ignore in audio-restricted environments
+  }
+}
+
+  const rawCandidates = election?.candidates || [];
+  const hasNota = rawCandidates.some(
+    (c) => c.name.toUpperCase().includes("NOTA") || c.id.toUpperCase().includes("NOTA")
+  );
+  const candidateSlate: CandidateResponse[] = hasNota
+    ? rawCandidates
+    : [
+        ...rawCandidates,
+        {
+          id: "C005",
+          name: "None of the Above (NOTA)",
+          party: "None of the Above",
+          symbol: "NOTA",
+          position: rawCandidates.length + 1,
+          election_id: electionId,
+        } as CandidateResponse,
+      ];
+
   const handleConfirm = async () => {
     if (state !== "VOTE_CONFIRMED" || !selectedCandidate) return;
 
@@ -150,6 +196,7 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
         ...prev,
         [selectedCandidate]: (prev[selectedCandidate] || 0) + 1,
       }));
+      playEvmBeep();
       setLastVoteHash(`DIAG-SLIP-${Date.now().toString(16).toUpperCase()}`);
       setState("VOTE_COMPLETE");
       setShowVvpat(true);
@@ -159,7 +206,7 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
         setState("READY");
         setSelectedCandidate(null);
         setLcdMessage("UI DIAGNOSTIC MODE - READY");
-      }, 4000);
+      }, 7000);
       return;
     }
 
@@ -176,9 +223,10 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
         sequence_number: sequenceNumber
       });
 
+      playEvmBeep();
       setLastVoteHash(res.ballot_hash || "TEST-HASH");
       setState("VOTE_COMPLETE");
-      setLcdMessage("VOTE RECORDED");
+      setLcdMessage("VOTE RECORDED - VVPAT SLIP PRINTED");
       setShowVvpat(true);
 
       setTimeout(() => {
@@ -188,7 +236,7 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
         setSelectedCandidate(null);
         setSequenceNumber(prev => prev + 1);
         setLcdMessage("READY - AWAITING SESSION");
-      }, 5000);
+      }, 7000);
 
     } catch (err: any) {
       setLcdMessage("VOTE REJECTED");
@@ -207,7 +255,7 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
     }
   };
 
-  const selectedCandData = election?.candidates?.find(c => c.id === selectedCandidate);
+  const selectedCandData = candidateSlate.find(c => c.id === selectedCandidate);
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-8 select-none">
@@ -267,9 +315,13 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
 
           <EvmLCD message={lcdMessage} />
 
-          <div className="mt-8 bg-slate-900 p-4 rounded-lg border border-slate-700 flex-1 min-h-[300px]">
+          <div className="mt-6 bg-slate-900 p-4 rounded-lg border border-slate-700 flex-1 min-h-[300px]">
+            <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800 text-[11px] font-mono text-slate-400">
+              <span className="font-semibold text-slate-300">BALLOT UNIT (BU) — CANDIDATE SLATE</span>
+              <span>RULE 49B COMPLIANT WITH NOTA</span>
+            </div>
             <div className="grid grid-cols-1 gap-3">
-              {election?.candidates?.map((c, i) => (
+              {candidateSlate.map((c) => (
                 <EvmCandidateButton
                   key={c.id}
                   candidate={c}
@@ -282,8 +334,11 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
           </div>
         </div>
 
-        {/* Right Panel */}
+        {/* Right Panel: Control Unit & Status */}
         <div className="w-full md:w-80 flex flex-col gap-6">
+          <div className="text-[11px] font-mono text-slate-400 font-semibold tracking-wider border-b border-slate-700 pb-1">
+            CONTROL UNIT (CU) TWIN
+          </div>
           <EvmStatusPanel
             state={state}
             sequenceNumber={sequenceNumber}
@@ -297,6 +352,7 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
             canConfirm={state === "VOTE_CONFIRMED"}
             canCancel={state === "VOTE_CONFIRMED"}
             isAuthed={!!token}
+            isMockPoll={isMockPoll}
           />
         </div>
 

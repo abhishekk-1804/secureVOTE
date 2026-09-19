@@ -21,7 +21,14 @@ const STORAGE_TOKEN_KEY = "securevote_token";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserResponse | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return localStorage.getItem(STORAGE_TOKEN_KEY);
+      } catch {}
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -32,7 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem(STORAGE_TOKEN_KEY);
     } catch {}
-    if (pathname !== "/login") {
+    const isPublic =
+      pathname === "/" ||
+      pathname === "/login" ||
+      pathname === "/verify" ||
+      pathname.startsWith("/voter") ||
+      pathname.startsWith("/evm") ||
+      pathname.startsWith("/transparency");
+    if (!isPublic) {
       router.push("/login");
     }
   };

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Deterministic Demo Election Seeder for SecureVOTE.
 
 Creates:
@@ -126,6 +126,7 @@ async def _seed_with_session(session: AsyncSession, reset: bool = False):
         ("C002", "Bob Jenkins", "Civic Liberty", "B", 2),
         ("C003", "Carol Danvers", "Reform Union", "C", 3),
         ("C004", "David Miller", "Independent Coalition", "D", 4),
+        ("C005", "None of the Above (NOTA)", "None of the Above", "NOTA", 5),
     ]
     candidates_dicts = []
     for cid, name, party, symbol, pos in candidates_data:

@@ -85,7 +85,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                placeholder="••••••••"
               />
             </div>
           </div>
@@ -116,27 +116,27 @@ export default function LoginPage() {
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <button
               type="button"
-              onClick={() => setDemoCreds("admin", "adminpass")}
+              onClick={() => setDemoCreds("admin", "AdminSecurePassword123!")}
               className="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-lg transition text-slate-300"
             >
               <div className="font-bold text-indigo-400">ADMIN</div>
-              <div className="text-[10px] text-slate-500">admin / adminpass</div>
+              <div className="text-[10px] text-slate-500">admin / demo</div>
             </button>
             <button
               type="button"
-              onClick={() => setDemoCreds("auditor", "auditorpass")}
+              onClick={() => setDemoCreds("auditor", "AuditorSecurePassword123!")}
               className="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-lg transition text-slate-300"
             >
               <div className="font-bold text-teal-400">AUDITOR</div>
-              <div className="text-[10px] text-slate-500">auditor / auditorpass</div>
+              <div className="text-[10px] text-slate-500">auditor / demo</div>
             </button>
             <button
               type="button"
-              onClick={() => setDemoCreds("observer", "observerpass")}
+              onClick={() => setDemoCreds("observer", "ObserverSecurePassword123!")}
               className="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 rounded-lg transition text-slate-300"
             >
               <div className="font-bold text-slate-400">OBSERVER</div>
-              <div className="text-[10px] text-slate-500">observer / observerpass</div>
+              <div className="text-[10px] text-slate-500">observer / demo</div>
             </button>
           </div>
         </div>

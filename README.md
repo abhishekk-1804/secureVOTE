@@ -2,8 +2,22 @@
 
 An educational and research-oriented electronic voting security prototype demonstrating defense-in-depth, hardware tamper detection, tamper-evident audit trails, asymmetric cryptographic signing, local/external audit-root anchoring abstraction, independent offline verification, advisory anomaly detection, and keyed identity abstraction.
 
-> [!NOTE]
-> **Research-Oriented Prototype Notice**: SecureVOTE is an educational and academic research prototype. It is **not** an election-ready, nationally deployable, or legally certified voting system. It illustrates how cryptographic verification, hardware state machines, and defense-in-depth principles can be realized on resource-constrained microcontrollers and audited independently.
+> [!IMPORTANT]
+> **DISCLAIMER & NON-AFFILIATION NOTICE**:
+> SecureVOTE is an **independent educational and academic security research prototype**. It is **NOT** affiliated with, endorsed by, certified by, or operated by the Election Commission of India (ECI), Bharat Electronics Limited (BEL), Electronics Corporation of India Limited (ECIL), any State Election Commission, or any government authority.
+> It possesses **no statutory authority** under the Representation of the People Act 1951, the Conduct of Elections Rules 1961, or any legal election framework. It is strictly intended for laboratory simulation, pedagogical demonstration, and security vulnerability analysis. It must never be deployed for legally binding public elections.
+
+---
+
+### Three-Tier Conceptual Framework
+
+To maintain technical precision and clarity, this repository strictly distinguishes between three concepts:
+
+| Tier | Conceptual Domain | Characteristics & Precedents |
+|---|---|---|
+| **Tier 1** | **CURRENT INDIAN ELECTION PRACTICE** | Standalone, air-gapped M3 EVMs (Ballot Unit, Control Unit, VVPAT) engineered by BEL & ECIL. One-time programmable (OTP) microcontrollers, strictly **zero wireless/network connectivity**, physical multi-layer paper seals (pink seals, green paper seals, outer address tags), Rule 49E mandatory pre-poll mock polls ($\ge 50$ votes witnessed by polling agents), Form 17C reconciliation, and 5-station random VVPAT paper slip manual counts. |
+| **Tier 2** | **SECUREVOTE SIMULATION** | Software digital twin reproducing the operational ergonomics of Indian voting: realistic 7-second VVPAT inspection windows, 1000Hz confirmation audio beeps, Rule 49B NOTA candidate placement, electoral roll lookups across Indian constituencies (Bengaluru Central, Mumbai South, New Delhi, Varanasi, Kolkata Dakshin), and an officer command center spanning the 12 statutory election stages. |
+| **Tier 3** | **PROPOSED RESEARCH / FUTURE CONCEPTS** | Experimental cryptographic mechanisms evaluated for future academic exploration: append-only SHA-256 hash chains, Ed25519 digital signatures over result manifests, keyed HMAC-SHA256 identity abstraction, machine-verifiable independent verifiers, external audit-root commitments, and consular voting frameworks for overseas electors. |
 
 ---
 
@@ -296,6 +310,45 @@ cd D:\secureVOTE\backend
 
 ---
 
+## Defense-in-Depth Security Controls Matrix
+
+The prototype structures all security mechanisms into four explicit operational categories:
+
+| Category | Control Name | Mitigation Mechanism | Expected Detection / Proof |
+|---|---|---|---|
+| **PREVENTION** | Duplicate Session & Double Voting | Unique DB constraint on `(election_id, voter_credential)` | `HTTP 409 Conflict` on repeated token presentation |
+| **PREVENTION** | Closed-Election Ingestion Guard | FSM state enforcement in Ballot Ingestion Pipeline | `HTTP 409 Conflict` unless election state is `OPEN` |
+| **PREVENTION** | Message Replay Prevention | Monotonic sequence counter per terminal in non-volatile EEPROM | `HTTP 409 Conflict` if packet sequence $\le$ last seen |
+| **PREVENTION** | Hardware Terminal Whitelisting | Pre-registered device authentication & revocation checks | `HTTP 403 Forbidden` for unknown or revoked hardware |
+| **PREVENTION** | Identity-to-Ballot Linkability Prevention | Keyed HMAC-SHA256 pseudonymization (zero raw UID persistence) | `RFID AUTHENTICATION != VOTER ELIGIBILITY` enforcement |
+| **DETECTION** | Physical Enclosure Tamper Switch | Microswitch + non-volatile EEPROM latch flag (`0x0E`) | `TAMPER_DETECTED` event logged; device `SUSPENDED` |
+| **DETECTION** | Advisory Anomaly Detection Engine | 6 deterministic heuristic rules (rate bursts, sequence gaps, rejections) | `ADVISORY FINDING` flagged for RO human review (non-blocking) |
+| **DETECTION** | Hardware Telemetry & Heartbeat Liveness | Periodic status ping with sequence tracking | `STATION_DESYNC` or `OFFLINE` alert surfaced on dashboard |
+| **AUDITABILITY** | Append-Only Audit Log Hash Chain | Cryptographic SHA-256 chaining ($\text{entry\_hash}_i$) | `AUDIT VERIFICATION FAILED` on historical deletion or mutation |
+| **AUDITABILITY** | Audit-Root External Anchoring | Cryptographic Merkle root commitments to external registry | `ANCHOR_MISMATCH` on historical tree divergence or fork |
+| **AUDITABILITY** | Presiding Officer Chronological Diary | System & operational event trail (Rule 49V analogue) | `EVENT_SEQUENCE_GAP` if expected statutory milestones missing |
+| **VERIFICATION** | Configuration Freezing & Slate Audit | Frozen candidate slate SHA-256 fingerprint in DB & EEPROM | `CONFIGURATION HASH MISMATCH` on candidate alteration |
+| **VERIFICATION** | Zero-Drift Mathematical Reconciliation | Exact balance equation: $\sum \text{cand} \equiv \text{total} \equiv \sum \text{dev}$ | `RECONCILIATION FAILURE` if numerical drift $\neq 0$ |
+| **VERIFICATION** | Result Manifest Asymmetric Digital Signing | Ed25519 elliptic-curve signatures over certified manifest | `SIGNATURE_INVALID` on tampered tallies or untrusted key |
+| **VERIFICATION** | Machine-Verifiable Independent Verifier | Pure Python verifier over exported archive (DB-disconnected) | Typed 12-point failure codes on any invariant violation |
+| **VERIFICATION** | VVPAT Paper Slip Sample Reconciliation | Mandatory random 5-station paper slip audit (Rule 56D analogue) | `SLIP_COUNT_DISCREPANCY` flags electronic-to-paper divergence |
+
+---
+
+## Documented Privacy & Anonymity Model
+
+- **Prototype Scope vs. Production Mandate**:
+  In this research prototype, each `Ballot` record maintains a relational foreign-key reference to its `VotingSession` (`session_id`). This deliberate design decision enables educational demonstration of end-to-end tracing, duplicate voting rejection, and exact reconciliation.
+- **Mathematical Ballot Secrecy (Production Requirement)**:
+  Real-world secret-ballot elections strictly prohibit voter-to-ballot linkage. A production implementation must employ cryptographic mix-nets (e.g. verifiable shuffles), homomorphic tallying (e.g. ElectionGuard), or physical ballot isolation to mathematically guarantee that no authority can reconstruct individual voter choices.
+- **Keyed HMAC-SHA256 Pseudonymization**:
+  To demonstrate identity abstraction without compromising data hygiene, raw RFID chip UIDs or national ID numbers are **never** persisted to databases or audit logs. They are irreversibly pseudonymized via `HMAC-SHA256(raw_uid, SECUREVOTE_RFID_SECRET)`.
+- **Decoupled Verification Principle**:
+  $$\text{RFID AUTHENTICATION} \neq \text{VOTER ELIGIBILITY}$$
+  Presenting a valid physical smartcard proves possession of a registered cryptographic token; it does not grant unconditional ballot rights unless the independent electoral roll confirms eligibility in that specific constituency.
+
+---
+
 ## Architectural Boundaries & Limitations
 
 1. **Plaintext UART Link**: Microcontrollers like the ATmega328P lack hardware cryptographic acceleration. Serial communications over UART (9600 baud) are plaintext JSON strings. Integrity and replay are governed by sequence counters and hash-chain verification, not wire-level TLS.
@@ -304,7 +357,7 @@ cd D:\secureVOTE\backend
    - **Docker Host Daemon**: `ENVIRONMENT-BLOCKED` (Host daemon inactive).
    - **Wokwi CLI Automated Runner**: `ENVIRONMENT-BLOCKED` (Requires `WOKWI_CLI_TOKEN`).
    - **Public Blockchain Ledger**: `NOT CONFIGURED` (`LocalAnchorProvider` active as default).
-4. **Ballot Secrecy vs. Relational Traceability**: In this prototype, ballot secrecy is **not mathematically anonymous**. Each `Ballot` record maintains an explicit relational foreign-key linkage to its `VotingSession` (`session_id`) and associated credential. This was intentionally designed to enable educational demonstration of end-to-end audit tracing, duplicate vote prevention, and exact reconciliation. Real-world production systems require cryptographic mix-nets or homomorphic tallying to decouple voter identity from cast ballots.
+4. **Relational Traceability vs. Anonymity**: Documented in the Privacy Model above.
 5. **Research Prototype Notice**: SecureVOTE demonstrates verification architectures; it does not replace voter-verified paper audit trails (VVPAT) or national legal certification.
 
 ---
