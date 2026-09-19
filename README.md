@@ -21,6 +21,34 @@ To maintain technical precision and clarity, this repository strictly distinguis
 
 ---
 
+## 60-Second Portfolio Overview
+
+For hiring managers, system architects, and security researchers evaluating this codebase:
+
+| Question | Evaluation Answer |
+|---|---|
+| **1. What is SecureVOTE?** | An educational and academic electronic voting security prototype combining embedded hardware firmware (ATmega328P), an asynchronous backend API (FastAPI), a 43-route civic dashboard (Next.js 14), and an independent offline mathematical verifier. |
+| **2. Why was it built?** | To investigate and demonstrate the fundamental tension in electronic voting: how to provide **end-to-end mathematical auditability and tamper-evidence** without sacrificing the strict **ballot secrecy** required by democratic elections. |
+| **3. How does it work?** | Hardware voting units execute a strictly deterministic 12-state FSM; ballots and state changes flow over an attested serial link to an append-only cryptographic hash chain; upon election closure, an Ed25519-signed manifest is published for third-party verifiers to recompute all tallies offline. |
+| **4. What is actually implemented?** | **Firmware**: C++ state machine, EEPROM tamper latch, monotonic counter; **Backend**: 45 REST endpoints, zero-drift reconciliation, 6-rule advisory anomaly engine, HMAC identity abstraction; **Dashboard**: 43 Next.js routes covering public voter simulation, EVM terminal, and officer command console; **Standalone Verifier**: Pure Python verifier with zero database dependencies. |
+| **5. What research questions does it explore?** | (a) Air-gapped physical security vs. cryptographic network auditability; (b) Append-only hash chains vs. distributed consensus ledgers; (c) Advisory non-blocking anomaly detection vs. automated fail-closed lockout; (d) Keyed identity abstraction (`RFID AUTH != VOTER ELIGIBILITY`). |
+| **6. How is it verified?** | **100** backend pytest tests (including 20 attack scenarios), **28** dashboard Vitest tests, **43** compiled Next.js routes, **17** native firmware unit tests, and **7/7** automated browser end-to-end steps. |
+| **7. What are its limitations?** | Microcontroller UART is plaintext; relational DB schema retains ballot-to-session foreign keys for research tracing (production requires cryptographic mixnets/homomorphic encryption); simulated elector data; no official ECI certification. |
+| **8. How to run it in 3 commands?** | `cd backend && uvicorn app.main:app --port 8000` &rarr; `cd dashboard && npm run dev` &rarr; Open `http://localhost:3000`. |
+
+### Research Documentation Index
+Detailed technical specifications are published in the [`docs/`](docs/) directory:
+- [System Architecture](docs/architecture.md): Topology, component boundaries, and state machines.
+- [Security Model & Defenses](docs/security-model.md): 4-tier defense-in-depth classification and cryptographic primitives.
+- [Threat Model (13 Vectors)](docs/threat-model.md): Threat-asset matrix with detection controls and residual risks.
+- [Adversarial Attack Catalog](docs/attack-scenarios.md): Complete specification of all 20 automated attack tests.
+- [Privacy & Anonymity Analysis](docs/privacy-model.md): Academic disclosure on relational tracing vs. zero-knowledge anonymity.
+- [12-Point Verification Methodology](docs/verification-methodology.md): Mathematical invariant specification and typed failure codes.
+- [Deterministic Reproducibility Guide](docs/reproducibility.md): Deterministic environment seed, simulation, export, and verification instructions.
+- [Architectural Boundaries & Limitations](docs/limitations.md): Plaintext UART, relational schemas, and environment constraints.
+
+---
+
 ## Architecture Overview
 
 ```
@@ -187,22 +215,30 @@ Located in `backend/standalone_verifier/verifier.py`:
 
 ### 4. Automated Attack Demonstrations (`backend/tests/test_attacks.py`)
 
-Twelve automated adversarial tests prove that the defense-in-depth architecture prevents, detects, and isolates election tampering:
+Twenty automated adversarial tests prove that the defense-in-depth architecture prevents, detects, and isolates election tampering across all threat surfaces:
 
-| Test ID | Adversarial Attack Scenario | Security Defense & System Response |
-|---|---|---|
-| **Attack 1** | Direct SQL modification of audit log event data | Hash chain break detected immediately at corrupted entry. |
-| **Attack 2** | Modification of candidate slate after election freeze | Configuration hash check fails; transition to `OPEN` blocked. |
-| **Attack 3** | Re-submission of previously used voting session token | Rejected with `HTTP 409 Conflict` (Session already consumed). |
-| **Attack 4** | Casting ballot after election state is set to `CLOSED` | Rejected with `HTTP 400 Bad Request` (Election not open). |
-| **Attack 5** | Physical lid opening during voting operation | Hardware switch latched in EEPROM; device halted in `TAMPER_DETECTED`. |
-| **Attack 6** | Direct database ballot insertion / tally tampering | Zero-drift reconciliation failure detected ($\text{drift} \neq 0$). |
-| **Attack 7** | Replay of intercepted UART serial message | Rejected due to duplicate / non-monotonic sequence counter. |
-| **Attack 8** | Ballot cast from unauthorized / revoked terminal | Rejected with `HTTP 403 Forbidden` (Device not ACTIVE). |
-| **Attack 9** | Modification of candidate tally in signed result manifest | Ed25519 digital signature verification fails (`InvalidSignature`). |
-| **Attack 10** | Modification of candidate ID in exported election archive | Standalone verifier detects ballot hash mismatch & tally divergence. |
-| **Attack 11** | Corruption of anchored Merkle audit root | Standalone verifier detects mismatch between receipt and audit chain. |
-| **Attack 12** | High-severity advisory anomaly trigger | Anomaly logged for human review, but voting operations remain unblocked. |
+| Test ID | Test Function Name | Adversarial Attack Scenario | Security Defense & System Response |
+|---|---|---|---|
+| **Attack 1** | `test_attack_1_tamper_audit_record` | Direct SQL modification of historical audit record | Hash chain break detected immediately at corrupted entry (`AUDIT VERIFICATION FAILED`). |
+| **Attack 2** | `test_attack_2_tamper_config_post_lock` | Modification of candidate slate after configuration freeze | Candidate list hash mismatch; transition to `OPEN` blocked (`CONFIGURATION HASH MISMATCH`). |
+| **Attack 3** | `test_attack_3_duplicate_session` | Re-submission of previously consumed voting session | Unique session constraint; rejected with `HTTP 409 Conflict`. |
+| **Attack 4** | `test_attack_4_vote_after_close` | Casting ballot after election state is transitioned to `CLOSED` | Ingestion state guard rejects submission with `HTTP 400 Bad Request`. |
+| **Attack 5** | `test_attack_5_tamper_event_logging` | Physical enclosure breach during active poll | Microswitch latches in EEPROM; device suspended and `TAMPER_DETECTED` logged in audit trail. |
+| **Attack 6** | `test_attack_6_tally_manipulation` | Direct database ballot insertion / tally tampering | Zero-drift reconciliation constraint violation detected ($\text{drift} \neq 0$). |
+| **Attack 7** | `test_attack_7_replay_message` | Replay of intercepted UART serial vote transmission | Sequence counter duplicate/rollback check rejects packet with `HTTP 409 Conflict`. |
+| **Attack 8** | `test_attack_8_unknown_and_revoked_device` | Ballot submission from revoked or unregistered device | Device authentication middleware rejects packet with `HTTP 403 Forbidden`. |
+| **Attack 9** | `test_attack_9_modified_signed_result` | Modification of candidate tally in published result manifest | Ed25519 digital signature verification fails (`InvalidSignature`). |
+| **Attack 10** | `test_attack_10_modified_exported_ballot` | Manipulation of candidate ID inside exported JSON archive | Standalone verifier detects ballot hash mismatch and recount divergence. |
+| **Attack 11** | `test_attack_11_modified_anchor_root` | Corruption of Merkle audit root anchor receipt | Standalone verifier detects mismatch between external receipt and audit chain. |
+| **Attack 12** | `test_attack_12_high_severity_anomaly_does_not_block_operations` | High-severity advisory anomaly trigger during voting | Advisory anomaly flagged for Returning Officer review; active voting remains unblocked. |
+| **Attack 13** | `test_attack_13_voter_anonymity_schema_isolation` | Database schema audit for plaintext PII or raw smartcard UIDs | Zero raw RFID or voter PII found in ballot tables; keyed HMAC-SHA256 verified. |
+| **Attack 14** | `test_attack_14_sequence_rollback` | Terminal sequence number rollback / regression injection | Strict monotonicity check rejects out-of-order counter with `HTTP 409 Conflict`. |
+| **Attack 15** | `test_attack_15_candidate_insertion_in_open_state` | Attempting to register candidate while election is `OPEN` | Lifecycle mutation guard rejects candidate registration with `HTTP 409 Conflict`. |
+| **Attack 16** | `test_attack_16_orphaned_audit_entry_detached_chain` | Injected unchained audit event attempting log spoofing | Cryptographic chain verification detects missing/invalid predecessor hash. |
+| **Attack 17** | `test_attack_17_cross_constituency_candidate_spoofing` | Submitting vote for candidate from foreign constituency | Constituency candidate validation rejects invalid ID with `HTTP 422 Unprocessable Entity`. |
+| **Attack 18** | `test_attack_18_tampered_genesis_block` | Tampering with genesis block of the audit log chain | Entire audit chain validation fails at block 0 (`GENESIS CORRUPTION`). |
+| **Attack 19** | `test_attack_19_cross_election_session_replay` | Session token from Election A replayed in Election B | Scoped token validation rejects cross-election reuse with `HTTP 404/409`. |
+| **Attack 20** | `test_attack_20_concurrent_double_ballot` | Race condition: concurrent twin submissions of same session | Database-level unique constraint serializes transactions; exactly one succeeds, one rejected. |
 
 ---
 
@@ -307,6 +343,20 @@ cd D:\secureVOTE\backend
 .\venv\Scripts\pytest.exe tests/test_attacks.py -v
 ```
 *Result*: **20 passed** across all 20 documented attack vectors.
+
+### 8. Browser End-to-End User Journey (7/7 Steps Verified)
+```powershell
+# Requires backend and Next.js servers running locally
+node <scratchDir>\verify_browser_journey.cjs
+```
+*Result*: **7/7 passed** verifying complete user journey:
+1. Landing Gateway (`/`): Direct entry to voter portal and officer command routes.
+2. Citizen Portal (`/voter`): Voter registration simulation and eligibility checks.
+3. Digital EVM (`/evm`): 4-stage ballot voting protocol (Ballot enable &rarr; Candidate choice &rarr; Confirm &rarr; 7-second VVPAT inspection & 1000Hz beep).
+4. Polling Station Locator (`/voter/polling-station`): Constituency mapping and simulated booth directions.
+5. Independent Verifier (`/verify`): Clean election archive verification + interactive controlled mutation demonstration.
+6. Public Transparency Hub (`/transparency`): Manifest proofs and published election rosters.
+7. Officer Command Center (`/command`): Real-time telemetry, mock-poll verification, and anomaly monitoring.
 
 ---
 

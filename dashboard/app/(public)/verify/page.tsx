@@ -265,15 +265,41 @@ export default function IndependentVerificationPage() {
     setVerifying(false);
   };
 
+  const [isTamperDemo, setIsTamperDemo] = useState(false);
+
   const handleFetchAndVerify = async () => {
     if (!selectedElectionId) return;
     try {
       setVerifying(true);
+      setIsTamperDemo(false);
       const data = await api.exportElection(selectedElectionId, token);
       setCustomFileLoaded(false);
       await runVerificationOnData(data);
     } catch (err: any) {
       alert("Failed to export election data: " + (err.message || "Unknown error"));
+      setVerifying(false);
+    }
+  };
+
+  const handleSimulateTamper = async () => {
+    if (!selectedElectionId) return;
+    try {
+      setVerifying(true);
+      let data = exportPackage;
+      if (!data) {
+        data = await api.exportElection(selectedElectionId, token);
+      }
+      // Create a cloned mutated package with a corrupted audit chain entry
+      const mutated: ElectionExportResponse = JSON.parse(JSON.stringify(data));
+      if (mutated.audit_log && mutated.audit_log.length > 1) {
+        mutated.audit_log[1].previous_hash = "deadbeef00000000000000000000000000000000000000000000000000000000";
+      } else if (mutated.ballots && mutated.ballots.length > 0) {
+        mutated.ballots[0].ballot_hash = "ffffffff00000000000000000000000000000000000000000000000000000000";
+      }
+      setIsTamperDemo(true);
+      await runVerificationOnData(mutated);
+    } catch (err: any) {
+      alert("Failed to run tamper simulation: " + (err.message || "Unknown error"));
       setVerifying(false);
     }
   };
@@ -354,6 +380,18 @@ export default function IndependentVerificationPage() {
               <RefreshCw className="w-3.5 h-3.5 mr-1" />
               Fetch & Verify
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSimulateTamper}
+              loading={verifying}
+              disabled={!selectedElectionId}
+              className="border-rose-300 text-rose-700 hover:bg-rose-50"
+              title="Demonstrate how deliberate hash chain mutation triggers verification failure"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 mr-1 text-rose-600" />
+              Simulate Mutation
+            </Button>
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto justify-end">
@@ -371,6 +409,19 @@ export default function IndependentVerificationPage() {
           </div>
         </div>
       </Card>
+
+      {/* Controlled Tamper Demonstration Evidence Banner */}
+      {isTamperDemo && overallStatus === "FAILED" && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl text-xs text-amber-950 space-y-1 shadow-sm">
+          <div className="font-bold flex items-center gap-1.5 text-amber-900">
+            <ShieldAlert className="w-4 h-4 text-amber-600" />
+            Demonstration Evidence: Cryptographic Tamper-Evidence In Action
+          </div>
+          <p className="leading-relaxed">
+            The verifier detected a deliberate hash-chain mutation. In an append-only SHA-256 hash chain, altering any past entry invalidates the cryptographic continuity of all subsequent records. This demonstrates that silent historical mutations cannot occur undetected. Click <strong>Fetch &amp; Verify</strong> to re-verify the authentic live database record.
+          </p>
+        </div>
+      )}
 
       {/* Recount Summary Banner (if verified) */}
       {overallStatus && recountedStats && (

@@ -50,8 +50,8 @@ export default function LandingPage() {
             <Link href="/transparency" className="text-sm text-slate-300 hover:text-white underline underline-offset-4">
               VIEW TRANSPARENCY
             </Link>
-            <Link href="#" className="text-sm text-slate-300 hover:text-white underline underline-offset-4">
-              VIEW DOCUMENTATION
+            <Link href="/verify" className="text-sm text-slate-300 hover:text-white underline underline-offset-4">
+              INDEPENDENT VERIFIER
             </Link>
           </div>
         </div>
@@ -60,55 +60,72 @@ export default function LandingPage() {
       {/* Architecture Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12 text-slate-900">System Architecture</h2>
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">System Architecture &amp; Research Prototype</h2>
+            <p className="text-sm text-slate-600">
+              An educational platform combining authentic Indian voting ergonomics (CU, BU, 7s VVPAT window, NOTA) with research-grade verifiable audit logs, Ed25519 manifest signing, and advisory anomaly detection.
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4">
                 <Database className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Physical Arduino EVM</h3>
-              <p className="text-slate-600">Hardware device that records votes with cryptographic signing and tamper-evident storage.</p>
+              <h3 className="text-lg font-bold mb-2">Microcontroller Terminal</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Embedded ATmega328P/Arduino Uno prototype recording monotonic sequence-tracked voting events with hardware tamper-latch flags.
+              </p>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
               <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
                 <Server className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Digital EVM Twin</h3>
-              <p className="text-slate-600">Software simulator bridging the hardware device to the central backend infrastructure.</p>
+              <h3 className="text-lg font-bold mb-2">Digital EVM Twin</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Browser digital twin replicating Control Unit / Ballot Unit interactions, 1000Hz confirmation tone, Rule 49B NOTA, and the 7-second VVPAT viewing window.
+              </p>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
               <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center mb-4">
                 <Shield className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-2">SecureVOTE Backend</h3>
-              <p className="text-slate-600">Core system managing election data, cryptographic verification, and the tamper-evident audit chain.</p>
+              <h3 className="text-lg font-bold mb-2">SecureVOTE Core Backend</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                FastAPI + SQLAlchemy engine managing election state machines, keyed HMAC-SHA256 pseudonymization, and append-only SHA-256 audit chains.
+              </p>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
               <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center mb-4">
                 <Shield className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Election Management</h3>
-              <p className="text-slate-600">Officer console for configuring elections, monitoring devices, and managing security.</p>
+              <h3 className="text-lg font-bold mb-2">Command &amp; Lifecycle Center</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Officer dashboard modeling the 12-stage Indian statutory election lifecycle (Form 7A, mock poll Rule 49E, Form 17C account of votes, counting Rule 56D).
+              </p>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
               <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-4">
                 <CheckCircle className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Independent Verifier</h3>
-              <p className="text-slate-600">Tools allowing anyone to mathematically prove their vote was recorded without exposing their choice.</p>
+              <h3 className="text-lg font-bold mb-2">Independent Verifier</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Pure Python standalone verifier executing 12 deterministic invariant checks over exported election archives (hash chain, Ed25519 signatures, zero-drift).
+              </p>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
               <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4">
                 <Search className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Transparency Portal</h3>
-              <p className="text-slate-600">Public dashboard showing real-time statistics, audit logs, and election metadata.</p>
+              <h3 className="text-lg font-bold mb-2">Public Transparency Portal</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Open public portal publishing aggregate turnout, polling station operational status, and cryptographic audit root verification proofs.
+              </p>
             </div>
           </div>
         </div>

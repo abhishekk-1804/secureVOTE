@@ -292,6 +292,25 @@ function playEvmBeep() {
             </div>
           </div>
 
+          {/* Interactive Voting Protocol Stepper */}
+          <div className="mb-4 bg-slate-900/90 border border-slate-700/80 rounded-lg p-2 flex items-center justify-between text-[10px] sm:text-[11px] font-mono overflow-x-auto gap-1.5">
+            <span className={`px-2 py-0.5 rounded transition whitespace-nowrap ${state === "READY" ? "bg-blue-600 text-white font-bold" : "text-slate-400"}`}>
+              1. CU BALLOT ENABLE
+            </span>
+            <span className="text-slate-600 shrink-0">→</span>
+            <span className={`px-2 py-0.5 rounded transition whitespace-nowrap ${state === "CANDIDATE_SELECTION" ? "bg-blue-600 text-white font-bold animate-pulse" : "text-slate-400"}`}>
+              2. BU CANDIDATE / NOTA
+            </span>
+            <span className="text-slate-600 shrink-0">→</span>
+            <span className={`px-2 py-0.5 rounded transition whitespace-nowrap ${state === "VOTE_CONFIRMED" ? "bg-amber-600 text-white font-bold" : "text-slate-400"}`}>
+              3. CU CONFIRM
+            </span>
+            <span className="text-slate-600 shrink-0">→</span>
+            <span className={`px-2 py-0.5 rounded transition whitespace-nowrap ${showVvpat ? "bg-emerald-600 text-white font-bold animate-pulse" : "text-slate-400"}`}>
+              4. 7s VVPAT &amp; BEEP
+            </span>
+          </div>
+
           {isMockPoll && (
             <div className="mb-4 bg-rose-950/40 border-2 border-rose-500/50 rounded-lg p-3 text-xs flex flex-col gap-1">
               <div className="flex items-center justify-between">
