@@ -205,7 +205,6 @@ Potential research directions include:
 
 ## Release
 
-**Current portfolio baseline: `v2.0.0`**
+**Current portfolio baseline: v2.0.0**
 
-The `v2.0.0` tag represents the locked election-security research prototype baseline. Further Indian-election simulation features, geographic expansion and additional research experiments should be developed after this baseline rather than mixed into the release retroactively.
-
+The v2.0.0 tag represents the locked election-security research prototype baseline. The current main branch contains post-baseline deployment hardening for the public Vercel + Railway demonstration.
