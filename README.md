@@ -1,56 +1,75 @@
-# SecureVOTE
+﻿# SecureVOTE
 
-**Election Security Research Prototype — Embedded EVM + FastAPI + Next.js + Independent Verification**
+**Election Security Research Prototype â€” Embedded EVM + FastAPI + Next.js + Independent Verification**
 
 SecureVOTE is an educational and academic security research prototype that explores how an electronic voting ecosystem can combine **embedded-device controls, authenticated device workflows, tamper-evident audit trails, cryptographic result signing, reconciliation, adversarial testing, and independent verification**.
 
 > [!IMPORTANT]
 > **Research / non-affiliation notice:** SecureVOTE is an independent educational and academic prototype. It is **not affiliated with, endorsed by, certified by, or operated by the Election Commission of India (ECI), BEL, ECIL, any State Election Commission, or any government authority.** It is not intended for legally binding elections.
 
+
+## Live deployment
+
+| Surface | Deployment |
+|---|---|
+| Public SecureVOTE dashboard | https://secure-vote-eta.vercel.app/ |
+| Backend API health | https://securevote-production-1a7f.up.railway.app/api/health |
+| API explorer | https://securevote-production-1a7f.up.railway.app/docs |
+
+The current deployment connects the Next.js dashboard on **Vercel** to the FastAPI backend and PostgreSQL service on **Railway**. The browser-based Digital EVM has been smoke-tested against the live deployment using synthetic test data.
+
+## Product showcase
+
+![SecureVOTE hero showcase](docs/assets/securevote-hero-showcase-v2.1.png)
+
+**End-to-end SecureVOTE ecosystem:** voter services, Digital EVM, transparency, independent verification, officer operations, security workflows, and election simulation.
+
+![SecureVOTE interface showcase](docs/assets/securevote-showcase-collage-v2.1.png)
+
 ## Product at a glance
 
 SecureVOTE is deliberately larger than a dashboard:
 
-- **Citizen / Voter Portal** — simulated eligibility, voter services, polling information, candidate information and grievance flows.
-- **Digital EVM Twin** — browser-based simulation of an EVM-style voting workflow with candidate selection, confirmation and VVPAT-style preview.
-- **Physical EVM / Firmware** — Arduino Uno / ATmega328P firmware with an explicit 12-state finite-state machine, EEPROM state and physical tamper handling.
-- **Election Operations Console** — election lifecycle, device operations, reconciliation, audit and security workflows.
-- **Transparency Center** — aggregate election information and verification evidence without exposing raw credentials.
-- **Independent Verifier** — database-independent verification of exported election records.
-- **Security / Attack Lab** — deterministic adversarial scenarios for replay, tampering, configuration changes, tally manipulation and concurrency.
+- **Citizen / Voter Portal** â€” simulated eligibility, voter services, polling information, candidate information and grievance flows.
+- **Digital EVM Twin** â€” browser-based simulation of an EVM-style voting workflow with candidate selection, confirmation and VVPAT-style preview.
+- **Physical EVM / Firmware** â€” Arduino Uno / ATmega328P firmware with an explicit 12-state finite-state machine, EEPROM state and physical tamper handling.
+- **Election Operations Console** â€” election lifecycle, device operations, reconciliation, audit and security workflows.
+- **Transparency Center** â€” aggregate election information and verification evidence without exposing raw credentials.
+- **Independent Verifier** â€” database-independent verification of exported election records.
+- **Security / Attack Lab** â€” deterministic adversarial scenarios for replay, tampering, configuration changes, tally manipulation and concurrency.
 
 ## Architecture
 
 ```text
  Physical EVM / Digital EVM Twin
-              │
-              ▼
+              â”‚
+              â–¼
         Device / API Layer
-              │
-              ▼
+              â”‚
+              â–¼
        Election Backend
    FastAPI + PostgreSQL/SQLite
-              │
-       ┌──────┴───────┐
-       ▼              ▼
+              â”‚
+       â”Œâ”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”
+       â–¼              â–¼
    Audit Chain     Ballots / State
-       │              │
-       └──────┬───────┘
-              ▼
+       â”‚              â”‚
+       â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”˜
+              â–¼
        Reconciliation
-              │
-              ▼
+              â”‚
+              â–¼
        Result Manifest
-              │
+              â”‚
         Ed25519 Signature
-              │
-              ▼
+              â”‚
+              â–¼
      Independent Verifier
-              │
+              â”‚
        PASS / FAIL proofs
 ```
 
-**Design principle:** Device ≠ Backend ≠ Verifier ≠ Dashboard.
+**Design principle:** Device â‰  Backend â‰  Verifier â‰  Dashboard.
 
 The verifier is intentionally decoupled from FastAPI and SQLAlchemy so that exported election data can be checked independently.
 
@@ -90,24 +109,24 @@ One of the central demonstrations is:
 
 ```text
 Export election archive
-        │
-        ▼
+        â”‚
+        â–¼
 Independent verifier
-        │
-        ├── configuration
-        ├── ballot hashes
-        ├── ballot sequence
-        ├── candidate totals
-        ├── device totals
-        ├── reconciliation
-        ├── audit chain
-        ├── audit root
-        ├── manifest
-        ├── Ed25519 signature
-        └── anchor receipt
-                │
-          ┌─────┴─────┐
-          ▼           ▼
+        â”‚
+        â”œâ”€â”€ configuration
+        â”œâ”€â”€ ballot hashes
+        â”œâ”€â”€ ballot sequence
+        â”œâ”€â”€ candidate totals
+        â”œâ”€â”€ device totals
+        â”œâ”€â”€ reconciliation
+        â”œâ”€â”€ audit chain
+        â”œâ”€â”€ audit root
+        â”œâ”€â”€ manifest
+        â”œâ”€â”€ Ed25519 signature
+        â””â”€â”€ anchor receipt
+                â”‚
+          â”Œâ”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”
+          â–¼           â–¼
         PASS         FAIL
 ```
 
@@ -122,7 +141,7 @@ Latest project validation checkpoint:
 | Backend test suite | **88 / 88 passed** |
 | Firmware native tests | **17 / 17 passed** |
 | Dashboard tests | **28 / 28 passed** |
-| Next.js production build | **41 / 41 routes compiled** |
+| Next.js production build | **43 / 43 routes compiled** |
 | Standalone verifier tests | **12 / 12 passed** |
 | Attack suite | **12 / 12 passed** |
 | Deterministic 1,000-ballot demonstration | **Validated** |
@@ -134,12 +153,12 @@ The repository contains reproducibility and security documentation for the detai
 
 ```text
 secureVOTE/
-├── backend/                 # FastAPI, SQLAlchemy, election/security services
-├── dashboard/               # Next.js / TypeScript civic + operations UI
-├── firmware/                # Arduino / PlatformIO EVM firmware + serial bridge
-├── docs/                    # Architecture, threat model, privacy, verification
-├── screenshots/              # Product showcase assets
-└── README.md
+â”œâ”€â”€ backend/                 # FastAPI, SQLAlchemy, election/security services
+â”œâ”€â”€ dashboard/               # Next.js / TypeScript civic + operations UI
+â”œâ”€â”€ firmware/                # Arduino / PlatformIO EVM firmware + serial bridge
+â”œâ”€â”€ docs/                    # Architecture, threat model, privacy, verification
+â”œâ”€â”€ screenshots/              # Product showcase assets
+â””â”€â”€ README.md
 ```
 
 ## Run locally
@@ -208,3 +227,4 @@ Potential research directions include:
 **Current portfolio baseline: v2.0.0**
 
 The v2.0.0 tag represents the locked election-security research prototype baseline. The current main branch contains post-baseline deployment hardening for the public Vercel + Railway demonstration.
+
