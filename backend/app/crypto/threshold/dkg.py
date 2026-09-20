@@ -61,9 +61,10 @@ PEDERSEN_H = ECPoint(
 
 def derive_pedersen_h(seed: bytes = PEDERSEN_H_SEED) -> ECPoint:
     """
-    Transparently derive an independent generator point H on secp256r1.
-    Uses a verifiable 'nothing-up-my-sleeve' hash-to-curve construction
-    so that log_G(H) is provably unknown to all parties.
+    Deterministically derive an independent generator point H on secp256r1.
+    Uses a verifiable 'nothing-up-my-sleeve' hash-to-curve construction;
+    security relies on the assumption that the discrete-log relation between
+    G and H is computationally unknown.
     """
     counter = 0
     while True:

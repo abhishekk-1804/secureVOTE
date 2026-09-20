@@ -173,7 +173,9 @@ def prove_partial_decryption(
             s=s,
         )
     finally:
-        # Guarantee ephemeral nonce w is zeroed and not retained
+        # Ephemeral nonce hygiene: clear local variable reference.
+        # Python-level memory zeroization is not claimed.
+        # The nonce w is not serialized, persisted, logged, or returned.
         w = 0
 
 

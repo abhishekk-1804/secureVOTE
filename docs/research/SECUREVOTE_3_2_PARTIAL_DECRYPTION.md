@@ -69,7 +69,7 @@ Given private share $x_i \in [1, q-1]$, verification key $Y_i = x_i G$, cipherte
 4. **Response Scalar**:
    $$s = (w + c \cdot x_i) \pmod q$$
 5. **Output**: Proof tuple $\Pi = (comm_1, comm_2, c, s)$.
-6. **Ephemeral Nonce Erasure**: Blinding scalar $w$ is overwritten and eliminated from memory.
+6. **Ephemeral Nonce Handling**: Blinding scalar $w$ is cleared from local scope ($w = 0$); Python-level memory zeroization is not claimed. The nonce is not serialized, persisted, logged, or returned.
 
 ---
 
@@ -175,7 +175,7 @@ The implementation was validated against an exhaustive negative test suite in `b
 
 1. **Non-Interactivity & Fiat-Shamir in ROM**: Security relies on the random oracle model for SHA-256 with domain-separated transcripts.
 2. **Lagrange Combination Deferral**: This milestone covers only share generation and verification. Combining shares into the plaintext tally via Lagrange interpolation is deferred to milestone 3.2-C.
-3. **Modulo Reduction Bias**: The challenge scalar $c \in [1, q - 1]$ is reduced modulo $(q - 1)$ from a 256-bit hash digest. This introduces a negligible ($2^{-32}$) theoretical bias, which is acceptable in this research prototype. Production implementations should use wide reduction (RFC 9380).
+3. **Modulo Reduction Bias**: The 256-bit SHA-256 digest is reduced modulo q-1, which introduces a small statistical bias because the digest space is not an exact multiple of q-1. A standardized wide-reduction/hash-to-scalar construction is a future hardening step.
 4. **Side-Channel Protection**: Scalar multiplications in this prototype use standard curve operations and are not hardened against micro-architectural side-channel or power analysis attacks.
 
 ---

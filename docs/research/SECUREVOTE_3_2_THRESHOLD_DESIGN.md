@@ -345,7 +345,7 @@ All transcripts embed:
 Replaying a share or proof across different election IDs, candidates, or trustee roles causes the Fiat-Shamir challenge to mismatch under the ROM assumption.
 
 ### 14.5 Modular Reduction Bias Limitation
-The derivation $c = \text{SHA-256}(\cdot) \bmod (q - 1) + 1$ has a known minor non-uniform bias ($\approx 2^{-32}$) due to $2^{256} > q$. This is a documented research prototype limitation. A production system should employ wide-reduction (e.g., SHA-512 reduced mod $q$) or RFC 9380 Hash-to-Scalar.
+The 256-bit SHA-256 digest is reduced modulo q-1, which introduces a small statistical bias because the digest space is not an exact multiple of q-1. A standardized wide-reduction/hash-to-scalar construction is a future hardening step.
 
 ---
 

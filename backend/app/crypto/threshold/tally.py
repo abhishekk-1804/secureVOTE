@@ -377,22 +377,25 @@ def reconstruct_threshold_tally(
 
 
 # ===========================================================================
-# Independent Offline Verifier
+# Offline Public Verifier
 # ===========================================================================
 
 class ThresholdTallyVerifier:
     """
-    Independent, public offline auditor for threshold election tallies.
+    Offline public auditor for threshold election tallies.
 
     Validates:
-        1. Authoritative DKG manifest parameters (threshold = 2, trustee count = 3, QUAL size >= 2).
-        2. Selected trustees belong to QUAL and constitute an authorized quorum of size 2.
-        3. All candidate ciphertext slots (A_j, B_j) are valid on-curve points.
-        4. Chaum-Pedersen proofs for both trustees verify against manifest verification keys.
-        5. Exact Lagrange basis coefficients over Z_q.
-        6. Combined decryption points D_j == lambda_i * W_i + lambda_k * W_k.
-        7. Decrypted plaintexts satisfy M_j = T_j * G == B_j - D_j.
-        8. Tally reconciliation: sum(T_j) == ballot_count.
+        1. Protocol version matches expected ('SECUREVOTE32').
+        2. Election ID, threshold, and ballot count strictly bind between tally_result, manifest, and encrypted_tally.
+        3. Authoritative DKG manifest parameters (threshold = 2, trustee count = 3, QUAL size >= 2).
+        4. Selected trustees belong to QUAL, contain exactly 2 distinct IDs, are sorted canonically, and exist in trustee_packages.
+        5. Exact candidate ID set match: set(candidate_results.keys()) == set(combined_decryption_points.keys()) == set(authoritative_candidate_ids).
+        6. All candidate ciphertext slots (A_j, B_j) are valid on-curve points.
+        7. Chaum-Pedersen proofs for both trustees verify against manifest verification keys.
+        8. Exact Lagrange basis coefficients over Z_q.
+        9. Combined decryption points D_j == lambda_i * W_i + lambda_k * W_k.
+        10. Decrypted plaintexts satisfy M_j = T_j * G == B_j - D_j.
+        11. Tally reconciliation: sum(T_j) == ballot_count == total_votes.
 
     Crucial: Requires NO private keys, NO secret shares, and NEVER materializes secret x.
     """
@@ -405,28 +408,69 @@ class ThresholdTallyVerifier:
         trustee_packages: dict[int, TallyPartialDecryptionPackage],
         tally_result: ThresholdTallyResult,
         max_ballots: int = 10000,
+        expected_protocol_version: str = DEFAULT_PROTOCOL_VERSION,
     ) -> bool:
         """
-        Verify the complete threshold tally pipeline independently.
+        Verify the complete threshold tally pipeline offline.
         Returns True on complete verification, or raises ThresholdTallyError on invalid artifact.
         """
-        # 1. Manifest verification
+        # 1. Protocol version validation
+        if tally_result.protocol_version != expected_protocol_version:
+            raise ThresholdTallyError(
+                f"Protocol version mismatch: expected '{expected_protocol_version}', got '{tally_result.protocol_version}'"
+            )
+
+        # 2. Strict metadata binding validation
+        expected_election_id = encrypted_tally.get("election_id")
+        if tally_result.election_id != expected_election_id:
+            raise ThresholdTallyError(
+                f"Election ID mismatch: tally_result has '{tally_result.election_id}', encrypted_tally has '{expected_election_id}'"
+            )
+
+        if manifest.election_id != expected_election_id:
+            raise ThresholdTallyError(
+                f"Election ID mismatch: manifest has '{manifest.election_id}', encrypted_tally has '{expected_election_id}'"
+            )
+
+        # 3. Manifest parameters verification
         if manifest.threshold != 2 or manifest.trustee_count != 3:
             raise ThresholdTallyError("Manifest parameters do not conform to (2, 3) threshold model")
 
         if len(manifest.qualified_trustees) < 2:
             raise ThresholdTallyError("Insufficient qualified trustees in manifest")
 
-        # 2. Quorum verification
+        if tally_result.threshold != manifest.threshold:
+            raise ThresholdTallyError(
+                f"Threshold mismatch: tally_result has {tally_result.threshold}, manifest has {manifest.threshold}"
+            )
+
+        expected_ballot_count = encrypted_tally.get("ballot_count")
+        if tally_result.ballot_count != expected_ballot_count:
+            raise ThresholdTallyError(
+                f"Ballot count mismatch: tally_result has {tally_result.ballot_count}, encrypted_tally has {expected_ballot_count}"
+            )
+
+        # 4. Selected trustees validation
         selected = tally_result.selected_trustees
-        if len(selected) != 2:
-            raise InvalidTrusteeSubsetError(f"Tally result selected trustees must have size 2, got {len(selected)}")
+        if not isinstance(selected, (list, tuple)) or len(selected) != 2 or len(set(selected)) != 2:
+            raise InvalidTrusteeSubsetError(
+                f"Selected trustees must contain exactly 2 distinct IDs, got {selected}"
+            )
+
+        if list(selected) != sorted(list(selected)):
+            raise InvalidTrusteeSubsetError(
+                f"Selected trustees must be sorted canonically: got {selected}, expected {sorted(list(selected))}"
+            )
 
         for t_id in selected:
             if t_id not in manifest.qualified_trustees:
-                raise InvalidTrusteeSubsetError(f"Trustee {t_id} is not in qualified set {manifest.qualified_trustees}")
+                raise InvalidTrusteeSubsetError(
+                    f"Trustee {t_id} is not in qualified trustee set {manifest.qualified_trustees}"
+                )
             if t_id not in trustee_packages:
-                raise ThresholdTallyError(f"Missing partial decryption package for trustee {t_id}")
+                raise ThresholdTallyError(
+                    f"Missing partial decryption package for trustee {t_id}"
+                )
 
         t_i, t_k = selected[0], selected[1]
         pkg_i = trustee_packages[t_i]
@@ -435,19 +479,45 @@ class ThresholdTallyVerifier:
         vk_i = manifest.get_trustee_verification_key(t_i)
         vk_k = manifest.get_trustee_verification_key(t_k)
 
-        # 3. Lagrange coefficients
+        # 5. Candidate sets & unbound entries verification
+        tally_data = encrypted_tally.get("encrypted_tally", encrypted_tally)
+        authoritative_candidate_ids = tally_data.get("candidate_ids", [])
+        authoritative_set = set(authoritative_candidate_ids)
+
+        if set(tally_result.candidate_results.keys()) != authoritative_set:
+            raise ThresholdTallyError(
+                f"Candidate results key mismatch: expected {authoritative_set}, got {set(tally_result.candidate_results.keys())}"
+            )
+
+        if set(tally_result.combined_decryption_points.keys()) != authoritative_set:
+            raise ThresholdTallyError(
+                f"Combined decryption points key mismatch: expected {authoritative_set}, got {set(tally_result.combined_decryption_points.keys())}"
+            )
+
+        slot_data_list = tally_data.get("slots", [])
+        if len(slot_data_list) != len(authoritative_candidate_ids):
+            raise ThresholdTallyError("Ciphertext slot count does not match candidate count")
+
+        # 6. Lagrange coefficients
         lambda_i = compute_lagrange_coefficient(t_i, selected)
         lambda_k = compute_lagrange_coefficient(t_k, selected)
 
-        # 4. Candidate-by-candidate verification
-        tally_data = encrypted_tally.get("encrypted_tally", encrypted_tally)
-        candidate_ids = tally_data["candidate_ids"]
-        slot_data_list = tally_data["slots"]
-
-        for idx, cid in enumerate(candidate_ids):
+        # 7. Candidate-by-candidate verification
+        for idx, cid in enumerate(authoritative_candidate_ids):
             ct = deserialize_ciphertext(slot_data_list[idx])
             a_pt = ct.c1
             b_pt = ct.c2
+
+            if not point_on_curve(a_pt) or a_pt.is_infinity:
+                raise ThresholdTallyError(f"Ciphertext A component for candidate '{cid}' is off-curve or at infinity")
+
+            if not point_on_curve(b_pt) or b_pt.is_infinity:
+                raise ThresholdTallyError(f"Ciphertext B component for candidate '{cid}' is off-curve or at infinity")
+
+            if cid not in pkg_i.shares:
+                raise ThresholdTallyError(f"Trustee {t_i} missing share for candidate '{cid}'")
+            if cid not in pkg_k.shares:
+                raise ThresholdTallyError(f"Trustee {t_k} missing share for candidate '{cid}'")
 
             sh_i = pkg_i.shares[cid]
             sh_k = pkg_k.shares[cid]
@@ -488,8 +558,16 @@ class ThresholdTallyVerifier:
             if m_pt != expected_m:
                 raise ThresholdTallyError(f"Discrete logarithm mismatch for candidate '{cid}': expected {t_j}*G")
 
-        # 5. Reconciliation
-        if sum(tally_result.candidate_results.values()) != encrypted_tally["ballot_count"]:
-            raise TallyReconciliationError("Tally reconciliation check failed")
+        # 8. Reconciliation
+        total_votes = sum(tally_result.candidate_results.values())
+        if total_votes != encrypted_tally["ballot_count"]:
+            raise TallyReconciliationError(
+                f"Tally reconciliation check failed: sum of candidate votes ({total_votes}) != ballot_count ({encrypted_tally['ballot_count']})"
+            )
+
+        if tally_result.total_votes != total_votes:
+            raise TallyReconciliationError(
+                f"Tally result total_votes ({tally_result.total_votes}) != sum of candidate results ({total_votes})"
+            )
 
         return True

@@ -13,6 +13,7 @@ Covers:
 import ast
 import inspect
 import time
+from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -590,10 +591,10 @@ def test_incorrect_expected_election_tally_rejected(setup_3_trustee_election):
 
 
 # ===========================================================================
-# Independent Offline Verifier Soundness Test
+# Offline Public Verifier Soundness & Metadata Binding Tests
 # ===========================================================================
 
-def test_independent_threshold_tally_verifier(setup_3_trustee_election):
+def test_offline_threshold_tally_verifier_honest(setup_3_trustee_election):
     """Verify that ThresholdTallyVerifier succeeds on valid honest tallies."""
     ctx = setup_3_trustee_election
     selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
@@ -606,6 +607,100 @@ def test_independent_threshold_tally_verifier(setup_3_trustee_election):
         tally_result=res,
     )
     assert is_verified is True
+
+
+def test_verifier_altered_election_id_rejected(setup_3_trustee_election):
+    """Verifier rejects if tally_result election_id does not match encrypted_tally."""
+    ctx = setup_3_trustee_election
+    selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
+    res = reconstruct_threshold_tally(selected, ctx["encrypted_tally"], ctx["manifest"])
+    bad_res = replace(res, election_id="ALTERED-ELECTION-ID")
+    with pytest.raises(ThresholdTallyError) as excinfo:
+        ThresholdTallyVerifier.verify(ctx["manifest"], ctx["encrypted_tally"], selected, bad_res)
+    assert "Election ID mismatch" in str(excinfo.value)
+
+
+def test_verifier_altered_threshold_rejected(setup_3_trustee_election):
+    """Verifier rejects if tally_result threshold does not match manifest."""
+    ctx = setup_3_trustee_election
+    selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
+    res = reconstruct_threshold_tally(selected, ctx["encrypted_tally"], ctx["manifest"])
+    bad_res = replace(res, threshold=3)
+    with pytest.raises(ThresholdTallyError) as excinfo:
+        ThresholdTallyVerifier.verify(ctx["manifest"], ctx["encrypted_tally"], selected, bad_res)
+    assert "Threshold mismatch" in str(excinfo.value)
+
+
+def test_verifier_altered_ballot_count_rejected(setup_3_trustee_election):
+    """Verifier rejects if tally_result ballot_count does not match encrypted_tally."""
+    ctx = setup_3_trustee_election
+    selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
+    res = reconstruct_threshold_tally(selected, ctx["encrypted_tally"], ctx["manifest"])
+    bad_res = replace(res, ballot_count=999)
+    with pytest.raises(ThresholdTallyError) as excinfo:
+        ThresholdTallyVerifier.verify(ctx["manifest"], ctx["encrypted_tally"], selected, bad_res)
+    assert "Ballot count mismatch" in str(excinfo.value)
+
+
+def test_verifier_altered_protocol_version_rejected(setup_3_trustee_election):
+    """Verifier rejects if tally_result protocol_version does not match expected version."""
+    ctx = setup_3_trustee_election
+    selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
+    res = reconstruct_threshold_tally(selected, ctx["encrypted_tally"], ctx["manifest"])
+    bad_res = replace(res, protocol_version="SECUREVOTE33-UNKNOWN")
+    with pytest.raises(ThresholdTallyError) as excinfo:
+        ThresholdTallyVerifier.verify(ctx["manifest"], ctx["encrypted_tally"], selected, bad_res)
+    assert "Protocol version mismatch" in str(excinfo.value)
+
+
+def test_verifier_extra_candidate_result_rejected(setup_3_trustee_election):
+    """Verifier rejects extra unbound candidate results."""
+    ctx = setup_3_trustee_election
+    selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
+    res = reconstruct_threshold_tally(selected, ctx["encrypted_tally"], ctx["manifest"])
+    extra_candidates = dict(res.candidate_results)
+    extra_candidates["CAND-EXTRA"] = 0
+    bad_res = replace(res, candidate_results=extra_candidates)
+    with pytest.raises(ThresholdTallyError) as excinfo:
+        ThresholdTallyVerifier.verify(ctx["manifest"], ctx["encrypted_tally"], selected, bad_res)
+    assert "Candidate results key mismatch" in str(excinfo.value)
+
+
+def test_verifier_missing_combined_point_rejected(setup_3_trustee_election):
+    """Verifier rejects missing combined decryption points."""
+    ctx = setup_3_trustee_election
+    selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
+    res = reconstruct_threshold_tally(selected, ctx["encrypted_tally"], ctx["manifest"])
+    missing_points = dict(res.combined_decryption_points)
+    missing_points.pop("CAND-A")
+    bad_res = replace(res, combined_decryption_points=missing_points)
+    with pytest.raises(ThresholdTallyError) as excinfo:
+        ThresholdTallyVerifier.verify(ctx["manifest"], ctx["encrypted_tally"], selected, bad_res)
+    assert "Combined decryption points key mismatch" in str(excinfo.value)
+
+
+def test_verifier_extra_combined_point_rejected(setup_3_trustee_election):
+    """Verifier rejects extra unbound combined decryption points."""
+    ctx = setup_3_trustee_election
+    selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
+    res = reconstruct_threshold_tally(selected, ctx["encrypted_tally"], ctx["manifest"])
+    extra_points = dict(res.combined_decryption_points)
+    extra_points["CAND-EXTRA"] = res.combined_decryption_points["CAND-A"]
+    bad_res = replace(res, combined_decryption_points=extra_points)
+    with pytest.raises(ThresholdTallyError) as excinfo:
+        ThresholdTallyVerifier.verify(ctx["manifest"], ctx["encrypted_tally"], selected, bad_res)
+    assert "Combined decryption points key mismatch" in str(excinfo.value)
+
+
+def test_verifier_unsorted_selected_trustees_rejected(setup_3_trustee_election):
+    """Verifier rejects if selected trustees in tally_result are not canonically sorted."""
+    ctx = setup_3_trustee_election
+    selected = {1: ctx["trustee_packages"][1], 2: ctx["trustee_packages"][2]}
+    res = reconstruct_threshold_tally(selected, ctx["encrypted_tally"], ctx["manifest"])
+    bad_res = replace(res, selected_trustees=[2, 1])
+    with pytest.raises(InvalidTrusteeSubsetError) as excinfo:
+        ThresholdTallyVerifier.verify(ctx["manifest"], ctx["encrypted_tally"], selected, bad_res)
+    assert "Selected trustees must be sorted canonically" in str(excinfo.value)
 
 
 # ===========================================================================

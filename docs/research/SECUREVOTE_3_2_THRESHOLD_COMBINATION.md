@@ -22,10 +22,10 @@ In SecureVOTE 3.2-B, each qualified trustee $i \in \mathcal{QUAL}$ independently
 3. Subtracting $D_j$ from aggregate ciphertext component $B_j$ to extract the plaintext candidate message point:
    $$M_j = B_j - D_j = T_j \cdot G \in E(\mathbb{F}_p)$$
 4. Solving the discrete logarithm $T_j = \log_G(M_j)$ using a baby-step giant-step (BSGS) lookup table bounded by $T_{\max} = 100,000$.
-5. Providing an independent, public, non-interactive `ThresholdTallyVerifier` that verifies tally correctness without access to any secret key material.
+5. Providing an offline public verifier `ThresholdTallyVerifier` that verifies tally correctness without access to any secret key material.
 
 > [!IMPORTANT]
-> **Zero Joint Secret Materialization Guarantee**:
+> **Zero Joint Secret Materialization Invariant**:
 > At no point during combination, verification, or tallying is the joint secret key $x$ computed, reconstructed, or held in memory. Combination is executed exclusively as an elliptic curve point operation on public shares $W_{i,j}$.
 
 ---
@@ -91,26 +91,17 @@ The candidate vote count $T_j$ is recovered by solving the discrete logarithm $M
 
 ---
 
-## 3. Proof of Non-Materialization of Joint Secret $x$
+## 3. Implementation Invariant: Point-Level Combination Without Joint-Secret Reconstruction
 
-A core architectural invariant of SecureVOTE 3.2 is that the joint secret scalar $x \in \mathbb{Z}_q^*$ must never be computed, reassembled, or materialized in memory, disk, or network packets.
+A core architectural invariant of SecureVOTE 3.2 is that the joint secret scalar $x \in \mathbb{Z}_q^*$ is **never computed, materialized, or reconstructed**:
 
-### 3.1 Algebraic Isolation Proof
-Let $\mathcal{A}$ be an observer monitoring the tally server executing `reconstruct_threshold_tally`.
-- The inputs to combination are $(A_j, B_j)$ and $\{W_{i,j}, \Pi_{i,j}\}_{i \in S}$.
-- The combination operation computes:
-  $$D_j = \operatorname{ScalarMult}(\lambda_i, W_{i,j}) + \operatorname{ScalarMult}(\lambda_k, W_{k,j})$$
-- The scalars $\lambda_i, \lambda_k \in \mathbb{Z}_q^*$ are public constants determined solely by the public trustee identifiers in $S$.
-- The group elements $W_{i,j}, W_{k,j} \in E(\mathbb{F}_p)$ are public points on the bulletin board.
-- The scalar addition $\lambda_i x_i + \lambda_k x_k \pmod q$ is **never computed as a scalar value**. Only group operations on points are performed.
-- Under the Computational Diffie-Hellman (CDH) and Discrete Logarithm (DL) assumptions on $E(\mathbb{F}_p)$, learning $D_j = x A_j$ and $Y = x G$ does not allow computing $x$.
-- Consequently, $\mathcal{A}$ gains zero advantage in recovering $x$.
-
-### 3.2 Static AST & Token Invariant Verification
-To prevent developer regression or accidental leakage, the test suite enforces static AST analysis (`backend/tests/test_threshold_tally.py::test_no_secret_key_materialization_ast_assertion`):
-1. The code token `joint_secret` or variable assignment `x = ` or `lambda * x` does not appear in `backend/app/crypto/threshold/tally.py`.
-2. No private keys ($x_i$ or $x$) are passed as parameters to any tally function.
-3. All calculations occur strictly via `point_add` and `scalar_mult`.
+- **Group Operation Exclusivity**: The combination operation computes:
+  $$D_j = \operatorname{ScalarMult}(\lambda_i, W_{i,j}) + \operatorname{ScalarMult}(\lambda_k, W_{k,j}) \in E(\mathbb{F}_p)$$
+  operating solely on public elliptic curve points $W_{i,j}$.
+- **Public Interpolation Coefficients**: The scalars $\lambda_i, \lambda_k \in \mathbb{Z}_q^*$ are public values determined entirely by the public trustee identifiers in $S$.
+- **No Secret Material in Tally Module**: No secret share $x_i$ or joint secret $x$ is passed as an argument to any function in `backend/app/crypto/threshold/tally.py`.
+- **No Scalar Product Computation**: The scalar value $\lambda_i x_i + \lambda_k x_k \pmod q$ is **never calculated as a scalar**.
+- **Role of Static AST Test**: The automated AST test (`backend/tests/test_threshold_tally.py::test_no_joint_secret_reconstructed_static_assertion`) is a **regression guard**, not a formal mathematical proof. It verifies that prohibited tokens, secret assignments, or private scalar multiplications do not enter the implementation codebase.
 
 ---
 
@@ -132,9 +123,9 @@ A threshold decryption combination request must strictly satisfy:
 
 ---
 
-## 5. Independent Public Verifier (`ThresholdTallyVerifier`)
+## 5. Offline Public Verifier (`ThresholdTallyVerifier`)
 
-The `ThresholdTallyVerifier` class provides an independent, public, non-interactive audit mechanism that any third party, election observer, or voter can execute to verify election tally integrity.
+The `ThresholdTallyVerifier` class provides an offline public audit mechanism that any third party, election observer, or auditor can execute to verify election tally integrity.
 
 ### 5.1 Verification Algorithm
 The verifier requires **zero private keys** and operates exclusively on public data:
@@ -145,30 +136,41 @@ The verifier requires **zero private keys** and operates exclusively on public d
 
 ```
 Algorithm: VerifyThresholdTally
-Input: manifest, aggregated_ciphertexts, trustee_packages, tally_result
+Input: manifest, encrypted_tally, trustee_packages, tally_result
 Output: True if all checks pass, otherwise raises ThresholdTallyError
 
-1. For each trustee_id i in tally_result.participating_trustees:
-     Verify i in manifest.qual_trustees
-     Lookup verification key Y_i from manifest
-2. Verify len(tally_result.participating_trustees) >= manifest.threshold
-3. For each candidate_id j in tally_result.tallies:
+1. Verify tally_result.protocol_version == DEFAULT_PROTOCOL_VERSION ("SECUREVOTE32").
+2. Verify strict metadata binding:
+     tally_result.election_id == encrypted_tally["election_id"] == manifest.election_id
+     tally_result.threshold == manifest.threshold == 2
+     tally_result.ballot_count == encrypted_tally["ballot_count"]
+3. Verify manifest parameters (threshold = 2, trustee_count = 3, len(QUAL) >= 2).
+4. Verify selected trustees:
+     len(selected) == 2, len(set(selected)) == 2
+     selected == sorted(selected)
+     all(t in manifest.qualified_trustees for t in selected)
+     all(t in trustee_packages for t in selected)
+5. Verify exact candidate key sets:
+     set(tally_result.candidate_results.keys()) == set(authoritative_candidate_ids)
+     set(tally_result.combined_decryption_points.keys()) == set(authoritative_candidate_ids)
+6. For each candidate_id j in authoritative_candidate_ids:
      Compute Lagrange coefficients lambda_i(S) for i in S
      For each trustee i in S:
        Retrieve share W_{i,j} and proof Pi_{i,j}
        Execute verify_partial_decryption_proof(G, Y_i, A_j, W_{i,j}, Pi_{i,j})
      Combine D_j = sum_{i in S} lambda_i * W_{i,j}
+     Verify tally_result.combined_decryption_points[j] == D_j
      Extract M_j = B_j - D_j
-     Verify M_j == tally_result.tallies[j] * G
-4. Verify total_ballots == sum(tally_result.tallies.values())
-5. Return True
+     Verify M_j == tally_result.candidate_results[j] * G
+7. Verify tally reconciliation: sum(tally_result.candidate_results.values()) == tally_result.ballot_count == tally_result.total_votes.
+8. Return True
 ```
 
 ---
 
-## 6. Complete 28-Item Negative Test Matrix
+## 6. Complete Negative Test Matrix & Hardened Verification Tests
 
-The implementation was subjected to an exhaustive 28-item negative test suite in `backend/tests/test_threshold_tally.py`:
+The implementation was subjected to an exhaustive suite of negative tests in `backend/tests/test_threshold_tally.py`:
 
 | # | Test Name | Invariant Tested / Fault Injected | Expected & Observed Result |
 | :--- | :--- | :--- | :--- |
@@ -196,10 +198,18 @@ The implementation was subjected to an exhaustive 28-item negative test suite in
 | 22 | `test_off_curve_ciphertext_rejected` | Off-curve coordinates supplied in ciphertext | **PASSED** (`InvalidECPointError`) |
 | 23 | `test_off_curve_share_rejected` | Off-curve coordinates supplied in share | **PASSED** (`InvalidECPointError`) |
 | 24 | `test_wrong_trustee_verification_key_rejected` | Trustee 1's share evaluated with Trustee 2's key | **PASSED** (ZKP Eq 1 fails) |
-| 25 | `test_tally_verifier_detects_altered_tally` | Public verifier given tampered candidate vote count | **PASSED** (`ThresholdTallyError`) |
-| 26 | `test_tally_verifier_detects_altered_total_ballots` | Public verifier given mismatched total ballots | **PASSED** (`ThresholdTallyError`) |
-| 27 | `test_no_secret_key_materialization_ast_assertion` | Static AST inspection confirming $x$ is never formed | **PASSED** (Zero $x$ materialization) |
+| 25 | `test_tally_verifier_detects_altered_tally` | Offline verifier given tampered candidate vote count | **PASSED** (`ThresholdTallyError`) |
+| 26 | `test_tally_verifier_detects_altered_total_ballots` | Offline verifier given mismatched total ballots | **PASSED** (`ThresholdTallyError`) |
+| 27 | `test_no_joint_secret_reconstructed_static_assertion` | Static AST inspection confirming $x$ is never formed | **PASSED** (Zero $x$ materialization) |
 | 28 | `test_threshold_tally_serialization_round_trip` | Canonical JSON serialization & deserialization | **PASSED** (Lossless round trip) |
+| 29 | `test_verifier_altered_election_id_rejected` | Tampered `election_id` in tally result | **PASSED** (`ThresholdTallyError`) |
+| 30 | `test_verifier_altered_threshold_rejected` | Tampered `threshold` in tally result | **PASSED** (`ThresholdTallyError`) |
+| 31 | `test_verifier_altered_ballot_count_rejected` | Tampered `ballot_count` in tally result | **PASSED** (`ThresholdTallyError`) |
+| 32 | `test_verifier_altered_protocol_version_rejected` | Tampered `protocol_version` string | **PASSED** (`ThresholdTallyError`) |
+| 33 | `test_verifier_extra_candidate_result_rejected` | Unbound extra candidate in candidate results | **PASSED** (`ThresholdTallyError`) |
+| 34 | `test_verifier_missing_combined_point_rejected` | Missing combined point for candidate slot | **PASSED** (`ThresholdTallyError`) |
+| 35 | `test_verifier_extra_combined_point_rejected` | Unbound extra combined point | **PASSED** (`ThresholdTallyError`) |
+| 36 | `test_verifier_unsorted_selected_trustees_rejected` | Non-canonically sorted trustee list | **PASSED** (`InvalidTrusteeSubsetError`) |
 
 ---
 
@@ -214,14 +224,14 @@ Benchmarks were recorded on the research environment (Python 3.12, Windows x86_6
 | **Point-Level Combination** | 1 candidate ($S = \{1, 2\}$) | $\approx 0.9 \text{ ms}$ | 2 scalar mults + 1 point add |
 | **BSGS Discrete Logarithm** | Max tally $T = 10,000$ | $\approx 4.5 \text{ ms}$ | $O(\sqrt{T_{\max}})$ table lookup |
 | **Total Contest Tally Recovery** | 3 candidates, 2 trustees | $\approx 18.2 \text{ ms}$ | $2 K \text{ (verify)} + K \text{ (combine)} + K \text{ (BSGS)}$ |
-| **Public Verifier Execution** | Full election audit (3 candidates) | $\approx 19.5 \text{ ms}$ | Complete independent verification |
+| **Offline Public Verifier Execution** | Full election audit (3 candidates) | $\approx 19.5 \text{ ms}$ | Complete offline public verification |
 
 ---
 
 ## 8. Research Prototype Limitations & Open Questions
 
 1. **Uniformity of SHA-256 Scalar Reduction**:
-   In `transcript.py`, scalar challenges $c$ are derived by reducing a 256-bit SHA-256 digest modulo $(q - 1)$. Because $2^{256} > q$, this modular reduction deviates slightly from a perfectly uniform distribution over $[1, q - 1]$. While this theoretical non-uniformity does not present an exploitable vulnerability in practice, it is a known engineering trade-off of this research prototype. Production implementations should adopt wide-reduction methods (e.g., RFC 9380 Hash-to-Curve / Hash-to-Scalar).
+   The 256-bit SHA-256 digest is reduced modulo q-1, which introduces a small statistical bias because the digest space is not an exact multiple of q-1. A standardized wide-reduction/hash-to-scalar construction is a future hardening step.
 2. **BSGS Scalability Bound**:
    The discrete logarithm table is configured for $T_{\max} = 100,000$. This is well-suited for precinct-level or contest-level tallying. For massive elections exceeding $10^5$ votes per contest, hierarchical precinct aggregation or Pollard's rho/kangaroo algorithms would be required.
 3. **Additive Tally Requirement**:
