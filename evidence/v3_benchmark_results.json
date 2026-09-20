@@ -1,0 +1,62 @@
+{
+  "protocol": "Exponential ElGamal over secp256r1",
+  "timestamp": "2026-09-20T11:12:47.076547+00:00",
+  "results": [
+    {
+      "ballots": 10,
+      "keygen_ms": 24.84,
+      "encryption_seconds": 1.929503,
+      "throughput_ballots_per_sec": 5.18,
+      "aggregation_ms": 48.8,
+      "decryption_ms": 151.73,
+      "verification_seconds": 0.057093,
+      "total_seconds": 2.213,
+      "single_ballot_bytes": 1987,
+      "all_ballots_mb": 0.02,
+      "peak_memory_mb": 0.09,
+      "verified": true
+    },
+    {
+      "ballots": 100,
+      "keygen_ms": 22.45,
+      "encryption_seconds": 36.816312,
+      "throughput_ballots_per_sec": 2.72,
+      "aggregation_ms": 1031.46,
+      "decryption_ms": 350.98,
+      "verification_seconds": 1.18322,
+      "total_seconds": 39.4059,
+      "single_ballot_bytes": 1988,
+      "all_ballots_mb": 0.19,
+      "peak_memory_mb": 0.66,
+      "verified": true
+    },
+    {
+      "ballots": 1000,
+      "keygen_ms": 45.0,
+      "encryption_seconds": 371.849016,
+      "throughput_ballots_per_sec": 2.69,
+      "aggregation_ms": 10074.1,
+      "decryption_ms": 418.15,
+      "verification_seconds": 11.747961,
+      "total_seconds": 394.136,
+      "single_ballot_bytes": 1989,
+      "all_ballots_mb": 1.9,
+      "peak_memory_mb": 6.55,
+      "verified": true
+    },
+    {
+      "ballots": 5000,
+      "keygen_ms": 43.55,
+      "encryption_seconds": 1893.835557,
+      "throughput_ballots_per_sec": 2.64,
+      "aggregation_ms": 44610.01,
+      "decryption_ms": 333.85,
+      "verification_seconds": 35.496792,
+      "total_seconds": 1974.3209,
+      "single_ballot_bytes": 1989,
+      "all_ballots_mb": 9.48,
+      "peak_memory_mb": 32.74,
+      "verified": true
+    }
+  ]
+}

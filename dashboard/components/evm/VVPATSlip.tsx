@@ -8,10 +8,12 @@ export default function VVPATSlip({
   candidate,
   hash,
   isMockPoll,
+  cryptoCommitment,
 }: {
   candidate: CandidateResponse;
   hash: string;
   isMockPoll?: boolean;
+  cryptoCommitment?: string | null;
 }) {
   const [secondsRemaining, setSecondsRemaining] = useState(7);
 
@@ -89,11 +91,19 @@ export default function VVPATSlip({
         />
       </div>
 
-      <div className="mt-auto pt-2 border-t border-dashed border-slate-300 text-[10px] text-center font-mono text-slate-500 flex items-center justify-between">
-        <span>BALLOT HASH:</span>
-        <span className="font-bold text-slate-700">
-          {hash ? hash.substring(0, 16) : "PENDING"}...
-        </span>
+      <div className="mt-auto pt-2 border-t border-dashed border-slate-300 text-[10px] text-center font-mono text-slate-500 flex flex-col gap-1">
+        <div className="flex items-center justify-between w-full">
+          <span>BALLOT HASH:</span>
+          <span className="font-bold text-slate-700">
+            {hash ? hash.substring(0, 16) : "PENDING"}...
+          </span>
+        </div>
+        {cryptoCommitment && (
+          <div className="flex items-center justify-between w-full text-[9px] text-indigo-700 bg-indigo-50 p-1 rounded border border-indigo-200">
+            <span className="font-semibold">V3 COMMITMENT:</span>
+            <span className="font-mono">{cryptoCommitment.substring(0, 14)}...</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -446,3 +446,68 @@ export interface TransparencyOverview {
   manifest_status: string;
   notice: string;
 }
+
+// ---------------------------------------------------------------------------
+// SecureVOTE 3.0 Cryptographic Types
+// ---------------------------------------------------------------------------
+
+export interface V3InitElectionResponse {
+  election_id: string;
+  protocol_version: string;
+  key_fingerprint: string;
+  public_key: {
+    protocol_version: string;
+    curve: string;
+    x: string;
+    y: string;
+    fingerprint: string;
+  };
+  candidate_count: number;
+  candidates: string[];
+  status: string;
+}
+
+export interface V3CastBallotResponse {
+  status: string;
+  artifact_id: string;
+  commitment: string;
+  artifact_hash: string;
+  ballot_count: number;
+}
+
+export interface V3TallyResponse {
+  election_id: string;
+  protocol_version: string;
+  ballot_count: number;
+  status: string;
+  commitment: string;
+  artifact_hash: string;
+  encrypted_tally: {
+    slots: Array<{
+      c1: { x: string; y: string };
+      c2: { x: string; y: string };
+    }>;
+    candidate_ids: string[];
+    candidate_count: number;
+  };
+  decrypted_tally?: {
+    candidate_tallies: Record<string, number>;
+    total_ballots: number;
+    reconciliation_status: string;
+    key_fingerprint: string;
+  } | null;
+}
+
+export interface V3VerifyResponse {
+  verified: boolean;
+  election_id: string;
+  ballot_count: number;
+  checkpoints_passed: number;
+  checkpoints_total: number;
+  checkpoints: Array<{
+    checkpoint: string;
+    status: "PASSED" | "FAILED";
+    message: string;
+    details?: Record<string, any>;
+  }>;
+}

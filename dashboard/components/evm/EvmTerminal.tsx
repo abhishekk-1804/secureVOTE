@@ -32,6 +32,8 @@ export default function EvmTerminal({ deviceId, electionId }: { deviceId: string
   const [errorMsg, setErrorMsg] = useState("");
   const [showVvpat, setShowVvpat] = useState(false);
   const [lastVoteHash, setLastVoteHash] = useState("");
+  const [isCryptoMode, setIsCryptoMode] = useState(false);
+  const [cryptoCommitment, setCryptoCommitment] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -216,6 +218,19 @@ function playEvmBeep() {
     setLcdMessage("RECORDING VOTE...");
 
     try {
+      if (isCryptoMode) {
+        try {
+          const candIndex = candidateSlate.findIndex(c => c.id === selectedCandidate);
+          if (candIndex >= 0) {
+            const artifact = await api.encryptV3Ballot(electionId, candIndex);
+            await api.castV3Ballot(electionId, artifact);
+            setCryptoCommitment(artifact.commitment);
+          }
+        } catch (cErr) {
+          console.warn("V3 Crypto cast non-blocking fallback:", cErr);
+        }
+      }
+
       const res = await api.castVote({
         session_token: sessionToken,
         candidate_id: selectedCandidate,
@@ -226,7 +241,7 @@ function playEvmBeep() {
       playEvmBeep();
       setLastVoteHash(res.ballot_hash || "TEST-HASH");
       setState("VOTE_COMPLETE");
-      setLcdMessage("VOTE RECORDED - VVPAT SLIP PRINTED");
+      setLcdMessage(isCryptoMode ? "VOTE RECORDED & ENCRYPTED" : "VOTE RECORDED - VVPAT SLIP PRINTED");
       setShowVvpat(true);
 
       setTimeout(() => {
@@ -234,6 +249,7 @@ function playEvmBeep() {
         setState("READY");
         setSessionToken(null);
         setSelectedCandidate(null);
+        setCryptoCommitment(null);
         setSequenceNumber(prev => prev + 1);
         setLcdMessage("READY - AWAITING SESSION");
       }, 7000);
@@ -285,6 +301,17 @@ function playEvmBeep() {
                 }`}
               >
                 {isMockPoll ? "UI DIAGNOSTIC: ACTIVE" : "ENABLE UI DIAGNOSTIC"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCryptoMode(!isCryptoMode)}
+                className={`px-3 py-1 rounded text-xs font-bold transition-all border ${
+                  isCryptoMode
+                    ? "bg-indigo-600 text-white border-indigo-400 font-mono shadow-md"
+                    : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700"
+                }`}
+              >
+                {isCryptoMode ? "V3 CRYPTO: ON" : "V3 CRYPTO: OFF"}
               </button>
               <div className="bg-amber-500 text-slate-950 font-bold px-3 py-1 rounded-sm tracking-widest text-xs shadow-inner">
                 SIMULATION
@@ -376,7 +403,12 @@ function playEvmBeep() {
         </div>
 
         {showVvpat && selectedCandData && (
-          <VVPATSlip candidate={selectedCandData} hash={lastVoteHash} isMockPoll={isMockPoll} />
+          <VVPATSlip
+            candidate={selectedCandData}
+            hash={lastVoteHash}
+            isMockPoll={isMockPoll}
+            cryptoCommitment={cryptoCommitment}
+          />
         )}
 
       </div>

@@ -12,12 +12,13 @@ SecureVOTE is an educational and academic security research prototype that explo
 SecureVOTE is deliberately larger than a dashboard:
 
 - **Citizen / Voter Portal** — simulated eligibility, voter services, polling information, candidate information and grievance flows.
-- **Digital EVM Twin** — browser-based simulation of an EVM-style voting workflow with candidate selection, confirmation and VVPAT-style preview.
+- **Digital EVM Twin** — browser-based simulation of an EVM-style voting workflow with candidate selection, confirmation, VVPAT preview, and optional **v3 Cryptographic Privacy Mode**.
+- **SecureVOTE 3.0 Research Lab** — privacy-preserving electronic voting via Exponential ElGamal over NIST P-256 (`secp256r1`), additive homomorphic tallying, domain-separated SHA-256 commitments, and a 10-checkpoint independent verifier.
 - **Physical EVM / Firmware** — Arduino Uno / ATmega328P firmware with an explicit 12-state finite-state machine, EEPROM state and physical tamper handling.
 - **Election Operations Console** — election lifecycle, device operations, reconciliation, audit and security workflows.
 - **Transparency Center** — aggregate election information and verification evidence without exposing raw credentials.
-- **Independent Verifier** — database-independent verification of exported election records.
-- **Security / Attack Lab** — deterministic adversarial scenarios for replay, tampering, configuration changes, tally manipulation and concurrency.
+- **Independent Verifier** — database-independent verification of exported election records (v2 audit hash-chain & Ed25519 manifests, v3 homomorphic ciphertexts & commitments).
+- **Security / Attack Lab** — deterministic adversarial scenarios for replay, tampering, configuration changes, tally manipulation, and ciphertext mutation.
 
 ## Architecture
 

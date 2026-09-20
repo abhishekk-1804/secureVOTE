@@ -1,0 +1,114 @@
+{
+  "experiment_id": "EXP-42-1000",
+  "timestamp": "2026-09-20T10:28:24.089675+00:00",
+  "protocol_version": "SECUREVOTE3",
+  "parameters": {
+    "ballots": 1000,
+    "seed": 42,
+    "candidates": [
+      "CAND-A",
+      "CAND-B",
+      "CAND-C",
+      "NOTA"
+    ],
+    "curve": "secp256r1"
+  },
+  "ground_truth": {
+    "CAND-A": 374,
+    "CAND-B": 318,
+    "CAND-C": 200,
+    "NOTA": 108
+  },
+  "decrypted_tally": {
+    "CAND-A": 374,
+    "CAND-B": 318,
+    "CAND-C": 200,
+    "NOTA": 108
+  },
+  "reconciliation": {
+    "total_ballots": 1000,
+    "ground_truth_match": true,
+    "balanced": true
+  },
+  "performance_timings": {
+    "key_generation_seconds": 0.002928,
+    "encryption_seconds": 35.189609,
+    "encryption_throughput_per_sec": 28.42,
+    "aggregation_seconds": 0.70874,
+    "decryption_seconds": 0.034605,
+    "verification_seconds": 0.867568,
+    "total_experiment_seconds": 36.8039
+  },
+  "size_metrics": {
+    "single_ballot_json_bytes": 1989,
+    "all_ballots_json_bytes": 1989000,
+    "aggregate_tally_json_bytes": 1956
+  },
+  "verification": {
+    "verified": true,
+    "checkpoints_passed": 10,
+    "checkpoints_total": 10,
+    "checkpoints": [
+      {
+        "checkpoint": "checkpoint_1_protocol_version",
+        "status": "PASSED",
+        "message": "Protocol version SECUREVOTE3 verified",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_2_public_key",
+        "status": "PASSED",
+        "message": "Public key valid on secp256r1; fingerprint 98c70a391ce11501... verified",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_3_election_config",
+        "status": "PASSED",
+        "message": "Election EXP-42-1000 configured with 4 candidates",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_4_ballot_structure",
+        "status": "PASSED",
+        "message": "All 1000 ballots structurally well-formed",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_5_ciphertext_curve",
+        "status": "PASSED",
+        "message": "All ciphertext slots across 1000 ballots lie on secp256r1",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_6_ballot_commitments",
+        "status": "PASSED",
+        "message": "All 1000 ballot commitments independently verified",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_7_ballot_hashes",
+        "status": "PASSED",
+        "message": "All 1000 ballot artifact hashes independently verified",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_8_homomorphic_aggregation",
+        "status": "PASSED",
+        "message": "Homomorphic aggregation of 1000 ballots independently verified",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_9_tally_commitment",
+        "status": "PASSED",
+        "message": "Tally commitment independently verified",
+        "details": {}
+      },
+      {
+        "checkpoint": "checkpoint_10_reconciliation",
+        "status": "PASSED",
+        "message": "Zero-drift reconciliation verified: 1000 votes = 1000 ballots",
+        "details": {}
+      }
+    ]
+  }
+}

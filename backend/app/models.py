@@ -344,3 +344,9 @@ class Complaint(Base):
     resolution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
+
+
+# ---------------------------------------------------------------------------
+# SecureVOTE 3.0 Research Models Import
+# ---------------------------------------------------------------------------
+from app.models_v3 import V3CryptoElection, V3EncryptedBallot, V3EncryptedTally  # noqa: E402, F401

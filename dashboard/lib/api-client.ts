@@ -501,7 +501,69 @@ export const api = {
   async getSessions(electionId: string, token?: string | null): Promise<SessionResponse[]> {
     return request<SessionResponse[]>(`/api/elections/${electionId}/sessions`, {}, token);
   },
+
+  // ---------------------------------------------------------------------------
+  // SecureVOTE 3.0 Cryptographic API
+  // ---------------------------------------------------------------------------
+  async initV3Election(electionId: string, candidates: string[]): Promise<any> {
+    return request<any>('/api/v3/crypto/elections/init', {
+      method: 'POST',
+      body: JSON.stringify({ election_id: electionId, candidates }),
+    });
+  },
+
+  async getV3Election(electionId: string): Promise<any> {
+    return request<any>(`/api/v3/crypto/elections/${electionId}`);
+  },
+
+  async encryptV3Ballot(electionId: string, candidateIndex: number): Promise<any> {
+    return request<any>('/api/v3/crypto/ballots/encrypt', {
+      method: 'POST',
+      body: JSON.stringify({ election_id: electionId, candidate_index: candidateIndex }),
+    });
+  },
+
+  async castV3Ballot(electionId: string, ballotArtifact: any): Promise<any> {
+    return request<any>('/api/v3/crypto/ballots/cast', {
+      method: 'POST',
+      body: JSON.stringify({ election_id: electionId, ballot_artifact: ballotArtifact }),
+    });
+  },
+
+  async getV3Ballots(electionId: string): Promise<any> {
+    return request<any>(`/api/v3/crypto/ballots/${electionId}`);
+  },
+
+  async aggregateV3Tally(electionId: string): Promise<any> {
+    return request<any>('/api/v3/crypto/tally/aggregate', {
+      method: 'POST',
+      body: JSON.stringify({ election_id: electionId }),
+    });
+  },
+
+  async decryptV3Tally(electionId: string, privateKeyScalarHex?: string): Promise<any> {
+    return request<any>('/api/v3/crypto/tally/decrypt', {
+      method: 'POST',
+      body: JSON.stringify({ election_id: electionId, private_key_scalar_hex: privateKeyScalarHex }),
+    });
+  },
+
+  async getV3Tally(electionId: string): Promise<any> {
+    return request<any>(`/api/v3/crypto/tally/${electionId}`);
+  },
+
+  async exportV3Package(electionId: string): Promise<any> {
+    return request<any>(`/api/v3/crypto/export/${electionId}`);
+  },
+
+  async verifyV3Package(pkg: any): Promise<any> {
+    return request<any>('/api/v3/crypto/verify', {
+      method: 'POST',
+      body: JSON.stringify({ package: pkg }),
+    });
+  },
 };
+
 
 
 /**
