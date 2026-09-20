@@ -516,10 +516,10 @@ export const api = {
     return request<any>(`/api/v3/crypto/elections/${electionId}`);
   },
 
-  async encryptV3Ballot(electionId: string, candidateIndex: number): Promise<any> {
+  async encryptV3Ballot(electionId: string, candidateIndex: number, withZkp: boolean = true): Promise<any> {
     return request<any>('/api/v3/crypto/ballots/encrypt', {
       method: 'POST',
-      body: JSON.stringify({ election_id: electionId, candidate_index: candidateIndex }),
+      body: JSON.stringify({ election_id: electionId, candidate_index: candidateIndex, with_zkp: withZkp }),
     });
   },
 

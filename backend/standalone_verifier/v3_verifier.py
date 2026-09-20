@@ -94,10 +94,11 @@ class StandaloneV3ElectionVerifier:
 
         # Checkpoint 1: Protocol Version
         proto = package.get("protocol_version")
-        if proto == PROTOCOL_VERSION:
+        allowed_protos = {PROTOCOL_VERSION, "SECUREVOTE31"}
+        if proto in allowed_protos:
             record("checkpoint_1_protocol_version", True, f"Protocol version {proto} verified")
         else:
-            record("checkpoint_1_protocol_version", False, f"Expected {PROTOCOL_VERSION}, got {proto}")
+            record("checkpoint_1_protocol_version", False, f"Expected one of {sorted(allowed_protos)}, got {proto}")
             return {"verified": False, "checkpoints": checkpoints}
 
         # Checkpoint 2: Public Key Validation
@@ -192,6 +193,8 @@ class StandaloneV3ElectionVerifier:
                     "commitment": b["commitment"],
                     "key_fingerprint": b["key_fingerprint"],
                 }
+                if "proof" in b:
+                    artifact_data["proof"] = b["proof"]
                 domain = ballot_domain(b["election_id"])
                 recomputed_h = canonical_hash(artifact_data, domain=domain)
                 if expected_h != recomputed_h:
@@ -202,6 +205,80 @@ class StandaloneV3ElectionVerifier:
             record("checkpoint_7_ballot_hashes", True, f"All {ballot_count} ballot artifact hashes independently verified")
         else:
             record("checkpoint_7_ballot_hashes", False, f"Artifact hash mismatches at indices: {hash_mismatches[:5]}")
+
+        # Checkpoint 7B: Zero-Knowledge Ballot Validity Proofs (SecureVOTE 3.1)
+        # Verifies that every ballot proves v_j in {0, 1} and sum(v_j) == 1 without revealing selections
+        is_sv31 = (proto == "SECUREVOTE31")
+        proofs_present = [("proof" in b and b["proof"] is not None) for b in ballots]
+        proof_count = sum(1 for p in proofs_present if p)
+
+        zkp_structural_failures = []
+        zkp_cryptographic_failures = []
+        zk_status = "NOT_PRESENT"
+
+        if proof_count == ballot_count and ballot_count > 0:
+            from app.crypto.zk import verify_ballot_validity
+            for idx, b in enumerate(ballots):
+                proof = b.get("proof")
+                if not proof or not isinstance(proof, dict):
+                    zkp_structural_failures.append(idx)
+                    continue
+                try:
+                    verify_ballot_validity(
+                        public_key=public_key,
+                        encrypted_vote=b["encrypted_vote"],
+                        proof=proof,
+                        election_id=election_id,
+                    )
+                except Exception as e:
+                    zkp_cryptographic_failures.append((idx, str(e)))
+
+            if not zkp_structural_failures and not zkp_cryptographic_failures:
+                zk_status = "VALID"
+                record(
+                    "checkpoint_7b_zk_ballot_validity",
+                    True,
+                    f"Zero-knowledge ballot validity proofs verified for all {ballot_count} ballots (∀j: v_j ∈ {{0,1}} ∧ Σv_j = 1)",
+                    details={"zk_status": "VALID", "verified_ballots": ballot_count},
+                )
+            else:
+                zk_status = "INVALID"
+                fail_msg = f"ZKP verification failed: structural={zkp_structural_failures[:3]}, crypto={zkp_cryptographic_failures[:3]}"
+                record(
+                    "checkpoint_7b_zk_ballot_validity",
+                    False,
+                    fail_msg,
+                    details={"zk_status": "INVALID", "structural_failures": zkp_structural_failures, "crypto_failures": zkp_cryptographic_failures},
+                )
+        elif 0 < proof_count < ballot_count:
+            # Mixed-proof package: some ballots have proofs and some do not
+            zk_status = "INVALID"
+            record(
+                "checkpoint_7b_zk_ballot_validity",
+                False,
+                f"Mixed-proof package rejected in {proto} mode: {proof_count}/{ballot_count} ballots contain proofs",
+                details={"zk_status": "INVALID", "proof_count": proof_count, "ballot_count": ballot_count},
+            )
+        else:
+            # proof_count == 0
+            if is_sv31:
+                # In SECUREVOTE31 mode, lack of ZK validity proofs MUST fail checkpoint 7b
+                zk_status = "NOT_PRESENT"
+                record(
+                    "checkpoint_7b_zk_ballot_validity",
+                    False,
+                    "Missing required Zero-Knowledge ballot validity proofs in SECUREVOTE31 package (NOT_PRESENT)",
+                    details={"zk_status": "NOT_PRESENT", "ballot_count": ballot_count},
+                )
+            else:
+                # v3.0 compatibility mode: proofs not required for v3.0, marked NOT_VERIFIED
+                zk_status = "NOT_PRESENT"
+                record(
+                    "checkpoint_7b_zk_ballot_validity",
+                    True,
+                    "No ZK validity proofs present (v3.0 plaintext ballot mode - NOT_VERIFIED)",
+                    details={"zk_status": "NOT_PRESENT", "ballot_count": ballot_count},
+                )
 
         # Checkpoint 8: Independent Homomorphic Aggregation
         encrypted_tally = package.get("encrypted_tally")
@@ -268,12 +345,31 @@ class StandaloneV3ElectionVerifier:
         else:
             record("checkpoint_10_reconciliation", True, "No decrypted tally provided; encrypted stage verified")
 
+        # Granular diagnostic category states
+        c_map = {c["checkpoint"]: (c["status"] == "PASSED") for c in checkpoints}
+        ciphertext_structurally_valid = c_map.get("checkpoint_4_ballot_structure", False) and c_map.get("checkpoint_5_ciphertext_curve", False)
+        commitment_valid = c_map.get("checkpoint_6_ballot_commitments", False) and c_map.get("checkpoint_7_ballot_hashes", False)
+        proof_structurally_valid = (zk_status != "INVALID")
+        proof_cryptographically_valid = (zk_status == "VALID")
+        ballot_validity_valid = (zk_status == "VALID")
+        ballot_aggregation_valid = c_map.get("checkpoint_8_homomorphic_aggregation", False)
+        tally_valid = c_map.get("checkpoint_9_tally_commitment", False) and c_map.get("checkpoint_10_reconciliation", False)
+
         return {
             "verified": overall_passed,
             "election_id": election_id,
+            "protocol_version": proto,
             "ballot_count": ballot_count,
             "checkpoints_total": len(checkpoints),
             "checkpoints_passed": sum(1 for c in checkpoints if c["status"] == "PASSED"),
+            "ciphertext_structurally_valid": ciphertext_structurally_valid,
+            "commitment_valid": commitment_valid,
+            "proof_structurally_valid": proof_structurally_valid,
+            "proof_cryptographically_valid": proof_cryptographically_valid,
+            "ballot_validity_valid": ballot_validity_valid,
+            "ballot_validity_status": zk_status,
+            "ballot_aggregation_valid": ballot_aggregation_valid,
+            "tally_valid": tally_valid,
             "checkpoints": checkpoints,
         }
 

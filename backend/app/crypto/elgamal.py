@@ -280,6 +280,40 @@ def generate_keypair() -> ElGamalPrivateKey:
     return ElGamalPrivateKey(scalar=scalar, public_key=pub)
 
 
+def encrypt_with_nonce(
+    public_key: ElGamalPublicKey,
+    message: int,
+    r: Optional[int] = None,
+) -> tuple[ElGamalCiphertext, int]:
+    """
+    Encrypt an integer message using Exponential ElGamal, returning (ciphertext, nonce).
+
+    Args:
+        public_key: The recipient's ElGamal public key.
+        message: The integer to encrypt (typically 0 or 1 for one-hot encoding).
+        r: Optional explicit random nonce in [1, CURVE_ORDER-1]. If None, sampled from os.urandom.
+
+    Returns:
+        A tuple of (ElGamalCiphertext, nonce integer).
+    """
+    if not isinstance(message, int):
+        raise EncryptionError(f"Message must be an integer, got {type(message)}")
+
+    if r is None:
+        r_bytes = os.urandom(32)
+        r = int.from_bytes(r_bytes, 'big') % (CURVE_ORDER - 1) + 1
+
+    # C1 = r·G
+    c1 = scalar_mult(r, G)
+
+    # C2 = r·Y + m·G
+    r_y = scalar_mult(r, public_key.point)
+    m_g = scalar_mult(message, G)
+    c2 = point_add(r_y, m_g)
+
+    return ElGamalCiphertext(c1=c1, c2=c2), r
+
+
 def encrypt(public_key: ElGamalPublicKey, message: int) -> ElGamalCiphertext:
     """
     Encrypt an integer message using Exponential ElGamal.
@@ -294,22 +328,8 @@ def encrypt(public_key: ElGamalPublicKey, message: int) -> ElGamalCiphertext:
     Returns:
         An ElGamalCiphertext.
     """
-    if not isinstance(message, int):
-        raise EncryptionError(f"Message must be an integer, got {type(message)}")
-
-    # Generate random nonce
-    r_bytes = os.urandom(32)
-    r = int.from_bytes(r_bytes, 'big') % (CURVE_ORDER - 1) + 1
-
-    # C1 = r·G
-    c1 = scalar_mult(r, G)
-
-    # C2 = r·Y + m·G
-    r_y = scalar_mult(r, public_key.point)
-    m_g = scalar_mult(message, G)
-    c2 = point_add(r_y, m_g)
-
-    return ElGamalCiphertext(c1=c1, c2=c2)
+    ct, _ = encrypt_with_nonce(public_key, message)
+    return ct
 
 
 def add_ciphertexts(ct1: ElGamalCiphertext, ct2: ElGamalCiphertext) -> ElGamalCiphertext:

@@ -70,7 +70,9 @@ async def encrypt_ballot_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     """Client helper endpoint: encrypt a vote choice using the election public key."""
-    artifact = await CryptoV3Service.encrypt_ballot_for_voter(db, req.election_id, req.candidate_index)
+    artifact = await CryptoV3Service.encrypt_ballot_for_voter(
+        db, req.election_id, req.candidate_index, with_zkp=req.with_zkp
+    )
     return artifact
 
 

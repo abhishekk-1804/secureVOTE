@@ -19,10 +19,9 @@ SecureVOTE 3.0 has empirically demonstrated:
 
 ## 2. Current Limitations
 
-### 2.1 Absence of Zero-Knowledge Ballot Validity Proofs (`NOT IMPLEMENTED`)
-* **Problem**: The system does not prove that an encrypted ballot vector satisfies $v_j \in \{0, 1\}$ and $\sum_{j=0}^{k-1} v_j = 1$.
-* **Vulnerability**: A rogue voting client or compromised device firmware could inject arbitrary integer values (e.g., $v_0 = 100$), corrupting the election outcome without failing curve-point or commitment checks.
-* **Impact on Claims**: SecureVOTE 3.0 is **NOT End-to-End Verifiable (E2E-V)**.
+### 2.1 Absence of Zero-Knowledge Ballot Validity Proofs (`RESOLVED IN SECUREVOTE 3.1`)
+* **Problem**: In SecureVOTE 3.0, the system did not prove that an encrypted ballot vector satisfies $v_j \in \{0, 1\}$ and $\sum_{j=0}^{k-1} v_j = 1$.
+* **Resolution**: Successfully addressed in **SecureVOTE 3.1** via non-interactive Fiat-Shamir CDS94 disjunctive proofs for slots and Chaum-Pedersen sum equality proof. See `docs/research/SECUREVOTE_3_1_ZKP_SPECIFICATION.md` and `docs/research/SECUREVOTE_3_1_RESEARCH_GAPS.md`.
 
 ### 2.2 Single-Authority Decryption (`NOT IMPLEMENTED`)
 * **Problem**: The election private key scalar is held in server RAM during the election lifecycle.

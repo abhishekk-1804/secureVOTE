@@ -24,6 +24,7 @@ class V3InitElectionResponse(BaseModel):
 class V3EncryptBallotRequest(BaseModel):
     election_id: str
     candidate_index: int = Field(..., ge=0)
+    with_zkp: bool = True
 
 
 class V3CastBallotRequest(BaseModel):

@@ -1,0 +1,402 @@
+{
+  "benchmark": "SecureVOTE 3.0 vs 3.1 ZKP Comparative Evaluation",
+  "timestamp": "2026-09-20T12:41:18.360993+00:00",
+  "repetitions_per_scale": 3,
+  "scales_completed": [
+    10,
+    50,
+    100
+  ],
+  "scale_evaluations": [
+    {
+      "ballots": 10,
+      "repetitions": 3,
+      "raw_runs": [
+        {
+          "ballots": 10,
+          "seed": 42,
+          "baseline_v3_0": {
+            "generation_seconds": 1.3017,
+            "verification_seconds": 0.0465,
+            "ballot_size_bytes": 1973,
+            "peak_memory_mb": 0.1,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 7.6207,
+            "proof_generation_only_seconds": 6.3442,
+            "verification_seconds": 8.469,
+            "ballot_size_bytes": 6501,
+            "peak_memory_mb": 0.19,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4528,
+            "generation_overhead_pct": 485.4,
+            "verification_overhead_pct": 18104.6
+          }
+        },
+        {
+          "ballots": 10,
+          "seed": 143,
+          "baseline_v3_0": {
+            "generation_seconds": 1.9051,
+            "verification_seconds": 0.0488,
+            "ballot_size_bytes": 1974,
+            "peak_memory_mb": 0.1,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 9.7577,
+            "proof_generation_only_seconds": 7.9256,
+            "verification_seconds": 8.546,
+            "ballot_size_bytes": 6503,
+            "peak_memory_mb": 0.19,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4529,
+            "generation_overhead_pct": 412.2,
+            "verification_overhead_pct": 17430.0
+          }
+        },
+        {
+          "ballots": 10,
+          "seed": 244,
+          "baseline_v3_0": {
+            "generation_seconds": 2.1809,
+            "verification_seconds": 0.0588,
+            "ballot_size_bytes": 1974,
+            "peak_memory_mb": 0.1,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 9.0697,
+            "proof_generation_only_seconds": 7.5775,
+            "verification_seconds": 9.346,
+            "ballot_size_bytes": 6503,
+            "peak_memory_mb": 0.19,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4529,
+            "generation_overhead_pct": 315.9,
+            "verification_overhead_pct": 15807.4
+          }
+        }
+      ],
+      "median_summary": {
+        "baseline_v3_0": {
+          "generation_seconds": 1.9051,
+          "verification_seconds": 0.0488,
+          "ballot_size_bytes": 1973,
+          "peak_memory_mb": 0.1,
+          "verified": true
+        },
+        "zkp_v3_1": {
+          "total_generation_seconds": 9.0697,
+          "proof_generation_only_seconds": 7.5775,
+          "verification_seconds": 8.546,
+          "ballot_size_bytes": 6501,
+          "peak_memory_mb": 0.19,
+          "verified": true,
+          "ballot_validity_status": "VALID"
+        },
+        "comparative_overhead": {
+          "size_overhead_multiplier": 3.29,
+          "size_increase_bytes": 4528,
+          "generation_overhead_pct": 376.1,
+          "verification_overhead_pct": 17412.3
+        }
+      },
+      "variability": {
+        "baseline_generation_seconds": {
+          "min": 1.3017,
+          "max": 2.1809,
+          "stddev": 0.4497
+        },
+        "baseline_verification_seconds": {
+          "min": 0.0465,
+          "max": 0.0588,
+          "stddev": 0.0065
+        },
+        "zkp_total_generation_seconds": {
+          "min": 7.6207,
+          "max": 9.7577,
+          "stddev": 1.0908
+        },
+        "zkp_verification_seconds": {
+          "min": 8.469,
+          "max": 9.346,
+          "stddev": 0.4856
+        }
+      }
+    },
+    {
+      "ballots": 50,
+      "repetitions": 3,
+      "raw_runs": [
+        {
+          "ballots": 50,
+          "seed": 42,
+          "baseline_v3_0": {
+            "generation_seconds": 7.6605,
+            "verification_seconds": 0.28,
+            "ballot_size_bytes": 1973,
+            "peak_memory_mb": 0.38,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 52.545,
+            "proof_generation_only_seconds": 44.0149,
+            "verification_seconds": 40.4868,
+            "ballot_size_bytes": 6501,
+            "peak_memory_mb": 0.88,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4528,
+            "generation_overhead_pct": 585.9,
+            "verification_overhead_pct": 14359.9
+          }
+        },
+        {
+          "ballots": 50,
+          "seed": 143,
+          "baseline_v3_0": {
+            "generation_seconds": 7.1734,
+            "verification_seconds": 0.2757,
+            "ballot_size_bytes": 1974,
+            "peak_memory_mb": 0.38,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 43.1434,
+            "proof_generation_only_seconds": 36.1367,
+            "verification_seconds": 38.5798,
+            "ballot_size_bytes": 6503,
+            "peak_memory_mb": 0.88,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4529,
+            "generation_overhead_pct": 501.4,
+            "verification_overhead_pct": 13893.0
+          }
+        },
+        {
+          "ballots": 50,
+          "seed": 244,
+          "baseline_v3_0": {
+            "generation_seconds": 6.2133,
+            "verification_seconds": 0.2485,
+            "ballot_size_bytes": 1974,
+            "peak_memory_mb": 0.38,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 40.1246,
+            "proof_generation_only_seconds": 33.4328,
+            "verification_seconds": 37.7623,
+            "ballot_size_bytes": 6503,
+            "peak_memory_mb": 0.88,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4529,
+            "generation_overhead_pct": 545.8,
+            "verification_overhead_pct": 15099.0
+          }
+        }
+      ],
+      "median_summary": {
+        "baseline_v3_0": {
+          "generation_seconds": 7.1734,
+          "verification_seconds": 0.2757,
+          "ballot_size_bytes": 1973,
+          "peak_memory_mb": 0.38,
+          "verified": true
+        },
+        "zkp_v3_1": {
+          "total_generation_seconds": 43.1434,
+          "proof_generation_only_seconds": 36.1367,
+          "verification_seconds": 38.5798,
+          "ballot_size_bytes": 6501,
+          "peak_memory_mb": 0.88,
+          "verified": true,
+          "ballot_validity_status": "VALID"
+        },
+        "comparative_overhead": {
+          "size_overhead_multiplier": 3.29,
+          "size_increase_bytes": 4528,
+          "generation_overhead_pct": 501.4,
+          "verification_overhead_pct": 13893.4
+        }
+      },
+      "variability": {
+        "baseline_generation_seconds": {
+          "min": 6.2133,
+          "max": 7.6605,
+          "stddev": 0.7364
+        },
+        "baseline_verification_seconds": {
+          "min": 0.2485,
+          "max": 0.28,
+          "stddev": 0.0171
+        },
+        "zkp_total_generation_seconds": {
+          "min": 40.1246,
+          "max": 52.545,
+          "stddev": 6.4778
+        },
+        "zkp_verification_seconds": {
+          "min": 37.7623,
+          "max": 40.4868,
+          "stddev": 1.3981
+        }
+      }
+    },
+    {
+      "ballots": 100,
+      "repetitions": 3,
+      "raw_runs": [
+        {
+          "ballots": 100,
+          "seed": 42,
+          "baseline_v3_0": {
+            "generation_seconds": 13.8333,
+            "verification_seconds": 0.5204,
+            "ballot_size_bytes": 1974,
+            "peak_memory_mb": 0.74,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 80.9612,
+            "proof_generation_only_seconds": 67.5283,
+            "verification_seconds": 74.0491,
+            "ballot_size_bytes": 6503,
+            "peak_memory_mb": 1.75,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4529,
+            "generation_overhead_pct": 485.3,
+            "verification_overhead_pct": 14129.3
+          }
+        },
+        {
+          "ballots": 100,
+          "seed": 143,
+          "baseline_v3_0": {
+            "generation_seconds": 13.9813,
+            "verification_seconds": 0.5275,
+            "ballot_size_bytes": 1975,
+            "peak_memory_mb": 0.74,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 82.2709,
+            "proof_generation_only_seconds": 68.6756,
+            "verification_seconds": 76.9048,
+            "ballot_size_bytes": 6505,
+            "peak_memory_mb": 1.75,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4530,
+            "generation_overhead_pct": 488.4,
+            "verification_overhead_pct": 14478.0
+          }
+        },
+        {
+          "ballots": 100,
+          "seed": 244,
+          "baseline_v3_0": {
+            "generation_seconds": 13.8199,
+            "verification_seconds": 0.5381,
+            "ballot_size_bytes": 1975,
+            "peak_memory_mb": 0.74,
+            "verified": true
+          },
+          "zkp_v3_1": {
+            "total_generation_seconds": 83.6418,
+            "proof_generation_only_seconds": 69.7238,
+            "verification_seconds": 78.1334,
+            "ballot_size_bytes": 6505,
+            "peak_memory_mb": 1.75,
+            "verified": true,
+            "ballot_validity_status": "VALID"
+          },
+          "comparative_overhead": {
+            "size_overhead_multiplier": 3.29,
+            "size_increase_bytes": 4530,
+            "generation_overhead_pct": 505.2,
+            "verification_overhead_pct": 14419.8
+          }
+        }
+      ],
+      "median_summary": {
+        "baseline_v3_0": {
+          "generation_seconds": 13.8333,
+          "verification_seconds": 0.5275,
+          "ballot_size_bytes": 1974,
+          "peak_memory_mb": 0.74,
+          "verified": true
+        },
+        "zkp_v3_1": {
+          "total_generation_seconds": 82.2709,
+          "proof_generation_only_seconds": 68.6756,
+          "verification_seconds": 76.9048,
+          "ballot_size_bytes": 6503,
+          "peak_memory_mb": 1.75,
+          "verified": true,
+          "ballot_validity_status": "VALID"
+        },
+        "comparative_overhead": {
+          "size_overhead_multiplier": 3.29,
+          "size_increase_bytes": 4529,
+          "generation_overhead_pct": 494.7,
+          "verification_overhead_pct": 14479.1
+        }
+      },
+      "variability": {
+        "baseline_generation_seconds": {
+          "min": 13.8199,
+          "max": 13.9813,
+          "stddev": 0.0896
+        },
+        "baseline_verification_seconds": {
+          "min": 0.5204,
+          "max": 0.5381,
+          "stddev": 0.0089
+        },
+        "zkp_total_generation_seconds": {
+          "min": 80.9612,
+          "max": 83.6418,
+          "stddev": 1.3404
+        },
+        "zkp_verification_seconds": {
+          "min": 74.0491,
+          "max": 78.1334,
+          "stddev": 2.0955
+        }
+      }
+    }
+  ]
+}

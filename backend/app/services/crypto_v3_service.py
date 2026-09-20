@@ -95,8 +95,9 @@ class CryptoV3Service:
         db: AsyncSession,
         election_id: str,
         candidate_index: int,
+        with_zkp: bool = True,
     ) -> dict[str, Any]:
-        """Encrypt a voter choice using the election's public key."""
+        """Encrypt a voter choice using the election's public key, optionally generating a ZKP."""
         crypto_el = await cls.get_election(db, election_id)
         pub_data = json.loads(crypto_el.public_key_json)
         public_key = deserialize_public_key(pub_data)
@@ -111,6 +112,7 @@ class CryptoV3Service:
             candidate_count=len(candidates),
             election_id=election_id,
             candidate_ids=candidates,
+            with_zkp=with_zkp,
         )
         return artifact
 
