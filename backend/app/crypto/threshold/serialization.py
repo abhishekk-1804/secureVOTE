@@ -233,3 +233,88 @@ def deserialize_trustee_private_key_share(data: dict[str, Any]) -> Any:
         )
     except Exception as e:
         raise ThresholdSerializationError(f"Malformed private key share payload: {e}")
+
+
+def serialize_partial_decryption_proof(proof: Any) -> dict[str, Any]:
+    """Serialize a Chaum-Pedersen partial decryption proof."""
+    return {
+        "proof_type": "CHAUM_PEDERSEN_DLOG_EQUALITY",
+        "comm_1": serialize_point(proof.comm_1),
+        "comm_2": serialize_point(proof.comm_2),
+        "c": f"{proof.c:064x}",
+        "s": f"{proof.s:064x}",
+    }
+
+
+def deserialize_partial_decryption_proof(data: dict[str, Any]) -> Any:
+    """Deserialize a Chaum-Pedersen partial decryption proof."""
+    try:
+        from app.crypto.threshold.proof import ChaumPedersenEqualityProof
+        comm_1 = deserialize_point(data["comm_1"])
+        comm_2 = deserialize_point(data["comm_2"])
+        c = int(data["c"], 16)
+        s = int(data["s"], 16)
+        return ChaumPedersenEqualityProof(comm_1=comm_1, comm_2=comm_2, c=c, s=s)
+    except Exception as e:
+        raise ThresholdSerializationError(f"Malformed partial decryption proof payload: {e}")
+
+
+def serialize_partial_decryption_share(share: Any) -> dict[str, Any]:
+    """Serialize a PartialDecryptionShare for public ledger broadcast."""
+    return {
+        "protocol_version": share.protocol_version,
+        "artifact_type": "PARTIAL_DECRYPTION_SHARE",
+        "election_id": share.election_id,
+        "candidate_id": share.candidate_id,
+        "trustee_id": share.trustee_id,
+        "partial_decryption": serialize_point(share.partial_decryption),
+        "proof": serialize_partial_decryption_proof(share.proof),
+    }
+
+
+def deserialize_partial_decryption_share(data: dict[str, Any]) -> Any:
+    """Deserialize a PartialDecryptionShare."""
+    try:
+        from app.crypto.threshold.decryption import PartialDecryptionShare
+        return PartialDecryptionShare(
+            election_id=data["election_id"],
+            candidate_id=data["candidate_id"],
+            trustee_id=int(data["trustee_id"]),
+            partial_decryption=deserialize_point(data["partial_decryption"]),
+            proof=deserialize_partial_decryption_proof(data["proof"]),
+            protocol_version=data.get("protocol_version", "SECUREVOTE32"),
+        )
+    except Exception as e:
+        raise ThresholdSerializationError(f"Malformed partial decryption share payload: {e}")
+
+
+def serialize_tally_partial_decryption_package(pkg: Any) -> dict[str, Any]:
+    """Serialize a complete tally partial decryption package."""
+    return {
+        "protocol_version": pkg.protocol_version,
+        "artifact_type": "TALLY_PARTIAL_DECRYPTION_PACKAGE",
+        "election_id": pkg.election_id,
+        "trustee_id": pkg.trustee_id,
+        "shares": {
+            cand_id: serialize_partial_decryption_share(share)
+            for cand_id, share in pkg.shares.items()
+        },
+    }
+
+
+def deserialize_tally_partial_decryption_package(data: dict[str, Any]) -> Any:
+    """Deserialize a complete tally partial decryption package."""
+    try:
+        from app.crypto.threshold.decryption import TallyPartialDecryptionPackage
+        shares = {
+            cand_id: deserialize_partial_decryption_share(share_data)
+            for cand_id, share_data in data["shares"].items()
+        }
+        return TallyPartialDecryptionPackage(
+            election_id=data["election_id"],
+            trustee_id=int(data["trustee_id"]),
+            shares=shares,
+            protocol_version=data.get("protocol_version", "SECUREVOTE32"),
+        )
+    except Exception as e:
+        raise ThresholdSerializationError(f"Malformed tally partial decryption package payload: {e}")

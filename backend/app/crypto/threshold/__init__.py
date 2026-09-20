@@ -22,7 +22,36 @@ from app.crypto.threshold.dkg import (
     verify_complaint,
     verify_dkg_manifest,
     verify_pedersen_package,
-    verify_schnorr_representation,
+)
+from app.crypto.threshold.serialization import (
+    deserialize_complaint,
+    deserialize_dkg_manifest,
+    deserialize_feldman_package,
+    deserialize_partial_decryption_proof,
+    deserialize_partial_decryption_share,
+    deserialize_pedersen_package,
+    deserialize_schnorr_proof,
+    deserialize_share_package,
+    deserialize_tally_partial_decryption_package,
+    deserialize_trustee_private_key_share,
+    serialize_complaint,
+    serialize_dkg_manifest,
+    serialize_feldman_package,
+    serialize_partial_decryption_proof,
+    serialize_partial_decryption_share,
+    serialize_pedersen_package,
+    serialize_schnorr_proof,
+    serialize_share_package,
+    serialize_tally_partial_decryption_package,
+    serialize_trustee_private_key_share,
+)
+from app.crypto.threshold.decryption import (
+    PartialDecryptionShare,
+    TallyPartialDecryptionPackage,
+    compute_partial_decryption,
+    compute_tally_partial_decryptions,
+    verify_partial_decryption_share,
+    verify_tally_partial_decryption_package,
 )
 from app.crypto.threshold.exceptions import (
     CommitmentVerificationError,
@@ -30,27 +59,22 @@ from app.crypto.threshold.exceptions import (
     DisqualificationError,
     DKGError,
     InsufficientQualifiedTrusteesError,
+    InvalidShareError,
+    PartialDecryptionProofError,
     SchnorrProofError,
     ShareVerificationError,
+    ThresholdDecryptionError,
     ThresholdError,
     ThresholdSerializationError,
 )
-from app.crypto.threshold.serialization import (
-    deserialize_complaint,
-    deserialize_dkg_manifest,
-    deserialize_feldman_package,
-    deserialize_pedersen_package,
-    deserialize_schnorr_proof,
-    deserialize_share_package,
-    deserialize_trustee_private_key_share,
-    serialize_complaint,
-    serialize_dkg_manifest,
-    serialize_feldman_package,
-    serialize_pedersen_package,
-    serialize_schnorr_proof,
-    serialize_share_package,
-    serialize_trustee_private_key_share,
+from app.crypto.threshold.proof import (
+    ChaumPedersenEqualityProof,
+    PartialDecryptionProof,
+    check_partial_decryption_proof,
+    prove_partial_decryption,
+    verify_partial_decryption_proof,
 )
+
 
 __all__ = [
     # DKG & VSS Core
@@ -81,6 +105,21 @@ __all__ = [
     "DisqualificationError",
     "InsufficientQualifiedTrusteesError",
     "ThresholdSerializationError",
+    "ThresholdDecryptionError",
+    "PartialDecryptionProofError",
+    "InvalidShareError",
+    # Partial Decryption Proofs & Protocol
+    "ChaumPedersenEqualityProof",
+    "PartialDecryptionProof",
+    "prove_partial_decryption",
+    "verify_partial_decryption_proof",
+    "check_partial_decryption_proof",
+    "PartialDecryptionShare",
+    "TallyPartialDecryptionPackage",
+    "compute_partial_decryption",
+    "verify_partial_decryption_share",
+    "compute_tally_partial_decryptions",
+    "verify_tally_partial_decryption_package",
     # Serialization
     "serialize_schnorr_proof",
     "deserialize_schnorr_proof",
@@ -96,4 +135,10 @@ __all__ = [
     "deserialize_dkg_manifest",
     "serialize_trustee_private_key_share",
     "deserialize_trustee_private_key_share",
+    "serialize_partial_decryption_proof",
+    "deserialize_partial_decryption_proof",
+    "serialize_partial_decryption_share",
+    "deserialize_partial_decryption_share",
+    "serialize_tally_partial_decryption_package",
+    "deserialize_tally_partial_decryption_package",
 ]

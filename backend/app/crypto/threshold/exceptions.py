@@ -51,3 +51,18 @@ class InsufficientQualifiedTrusteesError(DKGError):
 class ThresholdSerializationError(ThresholdError):
     """Raised when threshold artifact serialization or deserialization fails."""
     pass
+
+
+class ThresholdDecryptionError(ThresholdError):
+    """Base exception for threshold decryption and partial decryption errors."""
+    pass
+
+
+class PartialDecryptionProofError(ThresholdDecryptionError):
+    """Raised when a Chaum-Pedersen partial decryption proof fails verification."""
+    pass
+
+
+class InvalidShareError(ThresholdDecryptionError):
+    """Raised when a partial decryption point or format is invalid."""
+    pass
