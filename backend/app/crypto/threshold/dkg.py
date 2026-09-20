@@ -261,6 +261,14 @@ class DKGPublicManifest:
     pedersen_commitments: list[dict[str, Any]]
     feldman_commitments: list[dict[str, Any]]
 
+    def get_trustee_verification_key(self, trustee_id: int) -> ECPoint:
+        """Lookup verification key point for a given trustee ID."""
+        for item in self.trustee_verification_keys:
+            if item["trustee_id"] == trustee_id:
+                return item["point"]
+        raise KeyError(f"Trustee {trustee_id} not found in manifest verification keys")
+
+
 
 # ---------------------------------------------------------------------------
 # Trustee DKG Session State Machine

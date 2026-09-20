@@ -318,3 +318,45 @@ def deserialize_tally_partial_decryption_package(data: dict[str, Any]) -> Any:
         )
     except Exception as e:
         raise ThresholdSerializationError(f"Malformed tally partial decryption package payload: {e}")
+
+
+def serialize_threshold_tally_result(res: Any) -> dict[str, Any]:
+    """Serialize a ThresholdTallyResult for public audit publication."""
+    return {
+        "protocol_version": res.protocol_version,
+        "artifact_type": "THRESHOLD_TALLY_RESULT",
+        "election_id": res.election_id,
+        "threshold": res.threshold,
+        "selected_trustees": res.selected_trustees,
+        "candidate_results": res.candidate_results,
+        "total_votes": res.total_votes,
+        "ballot_count": res.ballot_count,
+        "combined_decryption_points": {
+            cid: serialize_point(pt)
+            for cid, pt in res.combined_decryption_points.items()
+        },
+        "reconciled": res.reconciled,
+    }
+
+
+def deserialize_threshold_tally_result(data: dict[str, Any]) -> Any:
+    """Deserialize a ThresholdTallyResult from dictionary."""
+    try:
+        from app.crypto.threshold.tally import ThresholdTallyResult
+        combined_points = {
+            cid: deserialize_point(pt_data)
+            for cid, pt_data in data["combined_decryption_points"].items()
+        }
+        return ThresholdTallyResult(
+            election_id=data["election_id"],
+            threshold=int(data["threshold"]),
+            selected_trustees=[int(x) for x in data["selected_trustees"]],
+            candidate_results={cid: int(v) for cid, v in data["candidate_results"].items()},
+            total_votes=int(data["total_votes"]),
+            ballot_count=int(data["ballot_count"]),
+            combined_decryption_points=combined_points,
+            reconciled=bool(data["reconciled"]),
+            protocol_version=data.get("protocol_version", "SECUREVOTE32"),
+        )
+    except Exception as e:
+        raise ThresholdSerializationError(f"Malformed threshold tally result payload: {e}")

@@ -66,3 +66,18 @@ class PartialDecryptionProofError(ThresholdDecryptionError):
 class InvalidShareError(ThresholdDecryptionError):
     """Raised when a partial decryption point or format is invalid."""
     pass
+
+
+class ThresholdTallyError(ThresholdError):
+    """Base exception for threshold tally combination and recovery errors."""
+    pass
+
+
+class TallyReconciliationError(ThresholdTallyError):
+    """Raised when the recovered plaintext vote sum does not match expected ballot count."""
+    pass
+
+
+class InvalidTrusteeSubsetError(ThresholdTallyError):
+    """Raised when a selected trustee combination is invalid, duplicate, or unauthorized."""
+    pass

@@ -33,6 +33,7 @@ from app.crypto.threshold.serialization import (
     deserialize_schnorr_proof,
     deserialize_share_package,
     deserialize_tally_partial_decryption_package,
+    deserialize_threshold_tally_result,
     deserialize_trustee_private_key_share,
     serialize_complaint,
     serialize_dkg_manifest,
@@ -43,6 +44,7 @@ from app.crypto.threshold.serialization import (
     serialize_schnorr_proof,
     serialize_share_package,
     serialize_tally_partial_decryption_package,
+    serialize_threshold_tally_result,
     serialize_trustee_private_key_share,
 )
 from app.crypto.threshold.decryption import (
@@ -60,12 +62,15 @@ from app.crypto.threshold.exceptions import (
     DKGError,
     InsufficientQualifiedTrusteesError,
     InvalidShareError,
+    InvalidTrusteeSubsetError,
     PartialDecryptionProofError,
     SchnorrProofError,
     ShareVerificationError,
+    TallyReconciliationError,
     ThresholdDecryptionError,
     ThresholdError,
     ThresholdSerializationError,
+    ThresholdTallyError,
 )
 from app.crypto.threshold.proof import (
     ChaumPedersenEqualityProof,
@@ -74,6 +79,15 @@ from app.crypto.threshold.proof import (
     prove_partial_decryption,
     verify_partial_decryption_proof,
 )
+from app.crypto.threshold.tally import (
+    ThresholdTallyResult,
+    ThresholdTallyVerifier,
+    combine_candidate_partial_decryptions,
+    compute_lagrange_coefficient,
+    reconstruct_threshold_tally,
+    validate_partial_share_contribution,
+)
+
 
 
 __all__ = [
@@ -108,6 +122,9 @@ __all__ = [
     "ThresholdDecryptionError",
     "PartialDecryptionProofError",
     "InvalidShareError",
+    "ThresholdTallyError",
+    "TallyReconciliationError",
+    "InvalidTrusteeSubsetError",
     # Partial Decryption Proofs & Protocol
     "ChaumPedersenEqualityProof",
     "PartialDecryptionProof",
@@ -120,6 +137,13 @@ __all__ = [
     "verify_partial_decryption_share",
     "compute_tally_partial_decryptions",
     "verify_tally_partial_decryption_package",
+    # Threshold Tally Combination
+    "ThresholdTallyResult",
+    "ThresholdTallyVerifier",
+    "compute_lagrange_coefficient",
+    "validate_partial_share_contribution",
+    "combine_candidate_partial_decryptions",
+    "reconstruct_threshold_tally",
     # Serialization
     "serialize_schnorr_proof",
     "deserialize_schnorr_proof",
@@ -141,4 +165,6 @@ __all__ = [
     "deserialize_partial_decryption_share",
     "serialize_tally_partial_decryption_package",
     "deserialize_tally_partial_decryption_package",
+    "serialize_threshold_tally_result",
+    "deserialize_threshold_tally_result",
 ]
