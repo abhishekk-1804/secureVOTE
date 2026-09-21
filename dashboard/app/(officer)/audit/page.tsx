@@ -380,7 +380,7 @@ export default function AuditExplorerPage() {
 
           <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
             {independentResult.details.map((d, i) => (
-              <div key={i}>â€¢ {d}</div>
+              <div key={i}>• {d}</div>
             ))}
           </div>
         </div>
@@ -435,7 +435,7 @@ export default function AuditExplorerPage() {
                 <th className="py-3 px-4">Event Type</th>
                 <th className="py-3 px-4">Actor</th>
                 <th className="py-3 px-4">Device</th>
-                <th className="py-3 px-4">Hash Chain (Prev â†’ Entry)</th>
+                <th className="py-3 px-4">Hash Chain (Prev → Entry)</th>
                 <th className="py-3 px-4">Timestamp</th>
                 <th className="py-3 px-4">Details</th>
               </tr>

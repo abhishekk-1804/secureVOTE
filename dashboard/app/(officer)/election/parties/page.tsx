@@ -49,7 +49,7 @@ const DEMO_PARTIES: PartyProfile[] = [
     id: "P03",
     name: "National Development Front",
     shortName: "NDF",
-    symbol: "â˜€ï¸",
+    symbol: "☀️",
     nationalRegistrationId: "PR-2026-NDF",
     candidatesCount: 1,
     complianceStatus: "VERIFIED",
@@ -58,7 +58,7 @@ const DEMO_PARTIES: PartyProfile[] = [
     id: "P04",
     name: "Citizens United Movement",
     shortName: "CUM",
-    symbol: "âš–ï¸",
+    symbol: "⚖️",
     nationalRegistrationId: "PR-2026-CUM",
     candidatesCount: 1,
     complianceStatus: "VERIFIED",
@@ -115,7 +115,7 @@ export default function CandidatePartyServicesPage() {
                   <div>
                     <h3 className="text-sm font-bold text-white">{party.name}</h3>
                     <p className="text-xs text-slate-400 font-mono">
-                      {party.shortName} â€¢ {party.nationalRegistrationId}
+                      {party.shortName} • {party.nationalRegistrationId}
                     </p>
                   </div>
                 </div>

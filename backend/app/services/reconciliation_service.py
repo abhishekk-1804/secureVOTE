@@ -1,10 +1,10 @@
 """
 Reconciliation service for SecureVOTE.
 
-Performs exact reconciliation of election results per spec Ã‚Â§10:
+Performs exact reconciliation of election results per spec Â§10:
 sum(candidate_totals) == total_valid_ballots AND
 sum(device_totals) == total_ballots must hold with ZERO drift.
-Any mismatch is a RECONCILIATION FAILURE Ã¢â‚¬â€ there is no tolerance band.
+Any mismatch is a RECONCILIATION FAILURE — there is no tolerance band.
 """
 
 import json
@@ -18,7 +18,7 @@ from app.models import Ballot, Candidate, Device, Election
 
 
 class ReconciliationService:
-    """Exact reconciliation Ã¢â‚¬â€ zero tolerance for any numerical drift."""
+    """Exact reconciliation — zero tolerance for any numerical drift."""
 
     @staticmethod
     async def reconcile(
@@ -29,7 +29,7 @@ class ReconciliationService:
         Independently recompute tallies from raw ballot records and
         reconcile against device and election totals.
 
-        This method reads raw records directly Ã¢â‚¬â€ it never uses
+        This method reads raw records directly — it never uses
         precomputed totals or cached flags. All counts are computed
         from scratch.
 
@@ -71,7 +71,7 @@ class ReconciliationService:
         sum_candidate = sum(candidate_totals.values())
         sum_device = sum(device_totals.values())
 
-        # Exact match checks (Ã‚Â§10: zero drift)
+        # Exact match checks (Â§10: zero drift)
         candidate_match = sum_candidate == total_ballots
         device_match = sum_device == total_ballots
         cross_match = sum_candidate == sum_device

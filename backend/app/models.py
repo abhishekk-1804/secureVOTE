@@ -1,7 +1,7 @@
 """
 SQLAlchemy ORM models for SecureVOTE.
 
-This is a research-oriented prototype. The database is not assumed immutable Ã¢â‚¬â€
+This is a research-oriented prototype. The database is not assumed immutable —
 integrity comes from append-only audit events + hash chaining + independent
 verification, not from row-level protection alone.
 """
@@ -41,7 +41,7 @@ class User(Base):
     Application user for simulated credential/session authorization.
 
     Roles: ADMIN, AUDITOR, OBSERVER.
-    This is NOT a voter record Ã¢â‚¬â€ voters are represented by VotingSession.
+    This is NOT a voter record — voters are represented by VotingSession.
     """
 
     __tablename__ = "users"
@@ -62,7 +62,7 @@ class Election(Base):
     """
     An election lifecycle record.
 
-    States: CREATED Ã¢â€ â€™ CONFIGURED Ã¢â€ â€™ LOCKED Ã¢â€ â€™ OPEN Ã¢â€ â€™ SUSPENDED Ã¢â€ â€™ CLOSED Ã¢â€ â€™ PUBLISHED
+    States: CREATED → CONFIGURED → LOCKED → OPEN → SUSPENDED → CLOSED → PUBLISHED
     """
 
     __tablename__ = "elections"
@@ -129,7 +129,7 @@ class Device(Base):
     """
     A registered voting device (EVM unit).
 
-    Status: REGISTERED Ã¢â€ â€™ ACTIVE Ã¢â€ â€™ SUSPENDED / REVOKED
+    Status: REGISTERED → ACTIVE → SUSPENDED / REVOKED
     Tracks last_sequence_number for replay protection.
     """
 
@@ -160,8 +160,8 @@ class VotingSession(Base):
     A simulated voting session / credential authorization.
 
     Each voter_credential gets exactly one session per election.
-    This is a simulated credential Ã¢â‚¬â€ not a real voter identity mechanism.
-    Status: AUTHORIZED Ã¢â€ â€™ VOTED / EXPIRED / REVOKED
+    This is a simulated credential — not a real voter identity mechanism.
+    Status: AUTHORIZED → VOTED / EXPIRED / REVOKED
     """
 
     __tablename__ = "voting_sessions"
@@ -195,7 +195,7 @@ class Ballot(Base):
     Linked to a session (one ballot per session) and a device.
     sequence_number is monotonically increasing per device for replay protection.
 
-    Note: voter anonymity is NOT preserved in this prototype Ã¢â‚¬â€ the session
+    Note: voter anonymity is NOT preserved in this prototype — the session
     linkage exists for educational demonstration of audit trails.
     """
 
@@ -232,7 +232,7 @@ class AuditEntry(Base):
     all subsequent hashes to mismatch.
 
     The chain is verified by independently recomputing hashes from raw
-    records Ã¢â‚¬â€ never by reading a precomputed flag.
+    records — never by reading a precomputed flag.
     """
 
     __tablename__ = "audit_entries"
@@ -264,7 +264,7 @@ class ResultManifest(Base):
 
     Contains independently verifiable tallies, reconciliation status, and
     audit chain status. The manifest_hash is digitally signed backend-side
-    (per spec Ã‚Â§9 Ã¢â‚¬â€ Arduino Uno does not perform asymmetric signing).
+    (per spec Â§9 — Arduino Uno does not perform asymmetric signing).
     """
 
     __tablename__ = "result_manifests"

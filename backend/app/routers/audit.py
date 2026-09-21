@@ -23,7 +23,7 @@ async def get_audit_log(
     """Get paginated audit log for an election."""
     entries, total = await AuditService.get_audit_log(db, election_id, limit, offset)
 
-    # Determine chain status (quick check Ã¢â‚¬â€ full verify is a separate endpoint)
+    # Determine chain status (quick check — full verify is a separate endpoint)
     chain_status = "UNCHECKED"
     if total > 0:
         verification = await AuditService.verify_chain(db, election_id)
@@ -45,7 +45,7 @@ async def verify_audit_chain(
     """
     Independently verify the audit hash chain.
 
-    Recomputes every hash from raw record data Ã¢â‚¬â€ does NOT read any
+    Recomputes every hash from raw record data — does NOT read any
     precomputed verification flag.
     """
     result = await AuditService.verify_chain(db, election_id)

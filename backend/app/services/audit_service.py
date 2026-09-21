@@ -3,7 +3,7 @@ Audit service for SecureVOTE.
 
 Manages the append-only, hash-chained audit log. Each entry's hash includes
 the previous entry's hash, forming a tamper-evident chain. Verification
-independently recomputes all hashes from raw records Ã¢â‚¬â€ it never reads a
+independently recomputes all hashes from raw records — it never reads a
 precomputed status flag.
 """
 
@@ -139,7 +139,7 @@ class AuditService:
         """
         Independently verify the entire audit hash chain for an election.
 
-        This method recomputes every hash from raw record data Ã¢â‚¬â€ it does NOT
+        This method recomputes every hash from raw record data — it does NOT
         read any precomputed verification flag. Any modification to any
         historical entry will cause the chain to break at that point.
 

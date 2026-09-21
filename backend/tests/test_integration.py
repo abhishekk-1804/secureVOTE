@@ -7,8 +7,8 @@ duplicate prevention, replay protection, audit hashing + verification,
 reconciliation, verification engine, result manifest, closed-election
 rejection, invalid state transitions, and malformed input.
 
-These tests exercise the full API through HTTPX Ã¢â‚¬â€ they are integration
-tests, not unit tests, because they verify the complete requestÃ¢â€ â€™serviceÃ¢â€ â€™db
+These tests exercise the full API through HTTPX — they are integration
+tests, not unit tests, because they verify the complete request→service→db
 pipeline.
 """
 
@@ -96,8 +96,8 @@ async def test_rbac_observer_cannot_create_election(
 async def test_full_election_lifecycle(client: AsyncClient, admin_headers: dict):
     """
     End-to-end election lifecycle:
-    CREATED Ã¢â€ â€™ add candidates Ã¢â€ â€™ CONFIGURED Ã¢â€ â€™ LOCKED Ã¢â€ â€™ register+activate device Ã¢â€ â€™
-    OPEN Ã¢â€ â€™ authorize session Ã¢â€ â€™ cast vote Ã¢â€ â€™ CLOSED Ã¢â€ â€™ verify Ã¢â€ â€™ PUBLISHED
+    CREATED → add candidates → CONFIGURED → LOCKED → register+activate device →
+    OPEN → authorize session → cast vote → CLOSED → verify → PUBLISHED
     """
     # 1. Create election
     resp = await client.post(
@@ -218,7 +218,7 @@ async def test_full_election_lifecycle(client: AsyncClient, admin_headers: dict)
 
 @pytest.mark.asyncio
 async def test_invalid_state_transition(client: AsyncClient, admin_headers: dict):
-    """Reject invalid state transitions (e.g., CREATED Ã¢â€ â€™ OPEN)."""
+    """Reject invalid state transitions (e.g., CREATED → OPEN)."""
     await client.post(
         "/api/elections",
         json={"id": "EV-2026-002", "name": "Bad Transition Test"},
@@ -355,7 +355,7 @@ async def test_replay_rejected(client: AsyncClient, admin_headers: dict):
             "session_token": token2,
             "candidate_id": "C001",
             "device_id": "EVM-001",
-            "sequence_number": 1,  # REPLAY Ã¢â‚¬â€ same seq as before
+            "sequence_number": 1,  # REPLAY — same seq as before
         },
     )
     assert resp.status_code == 409

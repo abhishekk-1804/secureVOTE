@@ -60,7 +60,7 @@ def compute_ballot_hash(
     Compute SHA-256 hash for a ballot record.
 
     This provides integrity verification for individual ballot records.
-    It does NOT provide voter anonymity Ã¢â‚¬â€ the session linkage is preserved
+    It does NOT provide voter anonymity — the session linkage is preserved
     for educational demonstration of audit trails.
     """
     components = [

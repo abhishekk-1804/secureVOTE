@@ -21,7 +21,7 @@ async def get_results(
     """
     Get election results with full independent verification.
 
-    This endpoint does NOT return cached results Ã¢â‚¬â€ it independently
+    This endpoint does NOT return cached results — it independently
     recomputes tallies, verifies the audit chain, and runs reconciliation
     every time it is called.
     """

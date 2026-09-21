@@ -2,8 +2,8 @@
 Deterministic Demo Scenario Runner for SecureVOTE (Section 11).
 
 Election: EV-2026-001 "SecureVOTE Demo Election 2026"
-Candidates: C001Ã¢â‚¬â€œC004 (fictional parties, symbols AÃ¢â‚¬â€œD)
-Devices: EVM-001Ã¢â‚¬Â¦004
+Candidates: C001—œC004 (fictional parties, symbols A—œD)
+Devices: EVM-001”¦004
 Ballots: 1000 deterministic ballots across 4 devices (no random seeds)
 
 Full Sequence:

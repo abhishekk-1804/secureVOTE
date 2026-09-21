@@ -48,7 +48,7 @@ def generate_session_token() -> str:
     """
     Generate a unique session token.
 
-    This is a simulated session credential Ã¢â‚¬â€ not a real voter
+    This is a simulated session credential — not a real voter
     authentication mechanism. In a production system, session tokens
     would be bound to verified voter credentials.
     """

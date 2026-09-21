@@ -215,7 +215,7 @@ export default function ElectionTransparencyDetailPage() {
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xs text-slate-400">#{c.position}</span>
                 <span className="w-8 h-8 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs border border-blue-100 font-mono">
-                  {c.symbol || "â˜…"}
+                  {c.symbol || "★"}
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{c.name}</p>

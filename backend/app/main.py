@@ -1,5 +1,5 @@
 """
-SecureVOTE Backend Ã¢â‚¬â€ FastAPI Application Entry Point.
+SecureVOTE Backend — FastAPI Application Entry Point.
 
 This is a research-oriented prototype of an election integrity pipeline.
 It is NOT certified election equipment, production election infrastructure,
@@ -36,7 +36,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Ã¢â‚¬â€ allow dashboard dev server
+# CORS — allow dashboard dev server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
