@@ -8,6 +8,7 @@ interface ElectionContextType {
   elections: ElectionResponse[];
   selectedElection: ElectionResponse | null;
   selectElection: (id: string) => void;
+  updateSelectedElection: (el: ElectionResponse) => void;
   refreshElections: () => Promise<void>;
   loading: boolean;
 }
@@ -47,12 +48,17 @@ export function ElectionProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateSelectedElection = (el: ElectionResponse) => {
+    setSelectedElection(el);
+    setElections((prev) => prev.map((item) => (item.id === el.id ? el : item)));
+  };
+
   useEffect(() => {
     if (token) refreshElections();
   }, [token]);
 
   return (
-    <ElectionContext.Provider value={{ elections, selectedElection, selectElection, refreshElections, loading }}>
+    <ElectionContext.Provider value={{ elections, selectedElection, selectElection, updateSelectedElection, refreshElections, loading }}>
       {children}
     </ElectionContext.Provider>
   );

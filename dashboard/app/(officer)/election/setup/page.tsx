@@ -4,7 +4,7 @@ import { useElection } from "@/context/ElectionContext";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/context/AuthContext";
 import { formatApiError } from "@/lib/format-error";
-import { Play, Lock, FileArchive, Flag, PowerOff, Loader2 } from "lucide-react";
+import { Play, Lock, FileArchive, Flag, PowerOff, Loader2, Pause, Share2, CheckCircle2 } from "lucide-react";
 
 export default function ElectionSetupPage() {
   const { selectedElection, refreshElections } = useElection();
@@ -17,12 +17,19 @@ export default function ElectionSetupPage() {
   }
 
   const handleStateTransition = async (newState: string) => {
+    if (loading) return;
+    if (selectedElection.state === "PUBLISHED") {
+      setError("Election is already in PUBLISHED terminal state. No further transitions permitted.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       await api.updateElectionState(selectedElection.id, newState as any, token);
       await refreshElections();
     } catch (err: any) {
+      // Re-fetch authoritative state on error/conflict
+      await refreshElections();
       setError(formatApiError(err));
     } finally {
       setLoading(false);
@@ -60,35 +67,70 @@ export default function ElectionSetupPage() {
           ))}
         </div>
 
-        <div className="flex gap-4 border-t border-slate-800 pt-6">
-          <button
-            onClick={() => handleStateTransition("CONFIGURED")}
-            disabled={loading || selectedElection.state !== "CREATED"}
-            className="flex-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
-          >
-            Configure
-          </button>
-          <button
-            onClick={() => handleStateTransition("LOCKED")}
-            disabled={loading || selectedElection.state !== "CONFIGURED"}
-            className="flex-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-500 border border-amber-600/50 disabled:opacity-50 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
-          >
-            <Lock className="w-4 h-4" /> Lock Configuration
-          </button>
-          <button
-            onClick={() => handleStateTransition("OPEN")}
-            disabled={loading || (selectedElection.state !== "LOCKED" && selectedElection.state !== "SUSPENDED")}
-            className="flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-500 border border-emerald-600/50 disabled:opacity-50 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
-          >
-            <Play className="w-4 h-4" /> Open Polls
-          </button>
-          <button
-            onClick={() => handleStateTransition("CLOSED")}
-            disabled={loading || selectedElection.state !== "OPEN"}
-            className="flex-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-500 border border-rose-600/50 disabled:opacity-50 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
-          >
-            <PowerOff className="w-4 h-4" /> Close Polls
-          </button>
+        <div className="flex flex-wrap gap-4 border-t border-slate-800 pt-6">
+          {selectedElection.state === "PUBLISHED" ? (
+            <div className="flex items-center justify-center gap-2 p-3 bg-purple-950/60 border border-purple-800/60 text-purple-300 rounded-lg text-sm font-semibold w-full">
+              <CheckCircle2 className="w-5 h-5 text-purple-400" />
+              <span>PUBLISHED — FINAL / TERMINAL STATE (Lifecycle Complete)</span>
+            </div>
+          ) : (
+            <>
+              {selectedElection.state === "CREATED" && (
+                <button
+                  onClick={() => handleStateTransition("CONFIGURED")}
+                  disabled={loading}
+                  className="flex-1 min-w-[140px] bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
+                >
+                  Configure
+                </button>
+              )}
+              {selectedElection.state === "CONFIGURED" && (
+                <button
+                  onClick={() => handleStateTransition("LOCKED")}
+                  disabled={loading}
+                  className="flex-1 min-w-[140px] bg-amber-600/20 hover:bg-amber-600/30 text-amber-500 border border-amber-600/50 disabled:opacity-50 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-4 h-4" /> Lock Configuration
+                </button>
+              )}
+              {(selectedElection.state === "LOCKED" || selectedElection.state === "SUSPENDED") && (
+                <button
+                  onClick={() => handleStateTransition("OPEN")}
+                  disabled={loading}
+                  className="flex-1 min-w-[140px] bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-500 border border-emerald-600/50 disabled:opacity-50 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
+                >
+                  <Play className="w-4 h-4" /> {selectedElection.state === "SUSPENDED" ? "Resume Polls" : "Open Polls"}
+                </button>
+              )}
+              {selectedElection.state === "OPEN" && (
+                <button
+                  onClick={() => handleStateTransition("SUSPENDED")}
+                  disabled={loading}
+                  className="flex-1 min-w-[140px] bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-600/50 disabled:opacity-50 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
+                >
+                  <Pause className="w-4 h-4" /> Suspend Polls
+                </button>
+              )}
+              {(selectedElection.state === "OPEN" || selectedElection.state === "SUSPENDED") && (
+                <button
+                  onClick={() => handleStateTransition("CLOSED")}
+                  disabled={loading}
+                  className="flex-1 min-w-[140px] bg-rose-600/20 hover:bg-rose-600/30 text-rose-500 border border-rose-600/50 disabled:opacity-50 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
+                >
+                  <PowerOff className="w-4 h-4" /> Close Polls
+                </button>
+              )}
+              {selectedElection.state === "CLOSED" && (
+                <button
+                  onClick={() => handleStateTransition("PUBLISHED")}
+                  disabled={loading}
+                  className="flex-1 min-w-[140px] bg-purple-600 hover:bg-purple-500 text-white disabled:opacity-50 py-2 px-4 rounded font-medium flex items-center justify-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" /> Publish Results
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
 

@@ -226,6 +226,11 @@ export default function CommandCenterPage() {
 
   const handleStateTransition = async (newState: ElectionState) => {
     if (!election || !token) return;
+    if (actionLoading) return;
+    if (election.state === "PUBLISHED") {
+      setError("Election is already in PUBLISHED terminal state. No further transitions permitted.");
+      return;
+    }
     if (role !== "ADMIN") {
       setError("Forbidden: Only ADMIN users may transition election state.");
       return;
@@ -241,6 +246,19 @@ export default function CommandCenterPage() {
       const all = await api.getElections(token);
       setElections(Array.isArray(all) ? all : []);
     } catch (err: any) {
+      // Re-fetch authoritative election state on conflict/error
+      try {
+        const refreshed = await api.getElection(election.id, token);
+        setElection(refreshed);
+        const all = await api.getElections(token);
+        setElections(Array.isArray(all) ? all : []);
+        if (refreshed.state !== election.state) {
+          setError(`Election state changed elsewhere. Current state: ${refreshed.state}. (${err.message})`);
+          return;
+        }
+      } catch {
+        // Fall through to standard error report
+      }
       setError(err.message || `Failed to transition state to ${newState}`);
     } finally {
       setActionLoading(false);
@@ -408,6 +426,13 @@ export default function CommandCenterPage() {
                     <Share2 className="w-3.5 h-3.5" />
                     Publish Results
                   </button>
+                )}
+
+                {election.state === "PUBLISHED" && (
+                  <div className="flex items-center gap-2 px-3.5 py-2 bg-purple-950/60 border border-purple-800/60 text-purple-300 rounded-lg text-xs font-semibold">
+                    <CheckCircle2 className="w-4 h-4 text-purple-400" />
+                    <span>PUBLISHED — FINAL / TERMINAL STATE</span>
+                  </div>
                 )}
               </div>
             </div>
