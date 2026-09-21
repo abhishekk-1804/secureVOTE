@@ -179,6 +179,39 @@ async def export_package_endpoint(
     return package
 
 
+@router.get("/bundle/{election_id}")
+async def export_bundle_endpoint(
+    election_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Export self-contained SECUREVOTE-EVIDENCE-BUNDLE-1 manifest and artifacts."""
+    import tempfile
+    package = await CryptoV3Service.export_package(db, election_id)
+
+    from app.services.signing_service import SigningService
+    signing_key = SigningService.get_configured_private_key()
+    priv_hex = None
+    if signing_key:
+        from cryptography.hazmat.primitives import serialization
+        priv_bytes = signing_key.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        priv_hex = priv_bytes.hex()
+
+    temp_dir = tempfile.mkdtemp(prefix=f"bundle_{election_id}_")
+    from standalone_verifier.bundle_export import export_bundle
+    bundle_dir = os.path.join(temp_dir, f"evidence_bundle_{election_id}")
+    manifest = export_bundle(
+        package=package,
+        output_dir=bundle_dir,
+        signing_private_key_hex=priv_hex,
+        create_zip=False,
+    )
+    return {"manifest": manifest, "bundle_dir": bundle_dir}
+
+
 @router.post("/verify", response_model=V3VerifyResponse)
 async def verify_package_endpoint(req: V3VerifyRequest):
     """Run independent verifier on an uploaded v3 package."""
