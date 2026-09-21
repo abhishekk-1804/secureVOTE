@@ -262,7 +262,7 @@ describe("Indian Electoral Platform Components", () => {
       expect(screen.getByText("Active Pilot Election")).toBeDefined();
       expect(screen.getByText("Reference States & UTs")).toBeDefined();
       expect(screen.getByText("Simulated Polling Stations")).toBeDefined();
-      expect(screen.getByText("Cryptographic Ballots")).toBeDefined();
+      expect(screen.getByText("Simulated Research Ballots")).toBeDefined();
       expect(screen.getByText("Trustee Network Threshold")).toBeDefined();
       expect(screen.getByText("Detected Anomalies")).toBeDefined();
     });

@@ -161,7 +161,7 @@ export default function CommandCenterPage() {
             RESEARCH PROTOTYPE &amp; INDIAN ELECTORAL SIMULATION:
           </span>
           <span>
-            Not an official Election Commission of India system. State &amp; PC counts are real reference data; elector counts, turnouts, ballots, and devices are synthetic academic simulation models.
+            Independent research platform studying end-to-end verifiable voting and overseas consular voting proposals. Not an official Election Commission of India (ECI) system. Electoral geography names are compiled from public reference data; elector counts, turnouts, ballots, and devices are synthetic academic simulation models.
           </span>
         </div>
       </div>
@@ -259,23 +259,23 @@ export default function CommandCenterPage() {
               subtitle="Assigned CU + BU + VVPAT triplets"
               icon={Cpu}
               variant="default"
-              badge="3,840 TOTAL DEVICES"
+              badge="3,840 SIMULATED DEVICES"
             />
             <StatCard
-              title="Cryptographic Ballots"
+              title="Simulated Research Ballots"
               value="142,850"
               subtitle="Additive ElGamal on secp256r1"
               icon={Lock}
               variant="success"
-              badge="CDS94 ZKP VALIDATED"
+              badge="SIMULATED BENCHMARK"
             />
             <StatCard
-              title="E2E Verification Status"
-              value="100.0%"
-              subtitle="11/11 Mathematical Checks Passed"
+              title="Verification Architecture"
+              value="11-Point Check"
+              subtitle="Mathematical recomputation pipeline"
               icon={CheckCircle2}
               variant="success"
-              badge="AUDIT CHAIN INTACT"
+              badge="INDEPENDENT REPLAY"
             />
             <StatCard
               title="Trustee Network Threshold"

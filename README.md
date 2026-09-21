@@ -120,12 +120,13 @@ Latest project validation checkpoint:
 
 | Component | Result |
 |---|---:|
-| Backend test suite | **88 / 88 passed** |
+| Backend test suite | **315 / 315 passed** |
 | Firmware native tests | **17 / 17 passed** |
-| Dashboard tests | **28 / 28 passed** |
-| Next.js production build | **43 / 43 routes compiled** |
+| Dashboard tests | **45 / 45 passed (10 test files)** |
+| Next.js production build | **45 / 45 routes compiled** |
 | Standalone verifier tests | **12 / 12 passed** |
-| Attack suite | **12 / 12 passed** |
+| Attack suite | **20 / 20 passed** |
+| Threshold DKG & Decryption suite | **81 / 81 passed** |
 | Deterministic 1,000-ballot demonstration | **Validated** |
 | Docker / Wokwi automation | **Environment-blocked, documented** |
 
