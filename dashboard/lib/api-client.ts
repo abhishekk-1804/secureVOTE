@@ -327,6 +327,17 @@ export const api = {
     );
   },
 
+  async verifySignature(
+    payload: any,
+    signature: string,
+    publicKey?: string
+  ): Promise<{ valid: boolean; key_id?: string; fingerprint?: string }> {
+    return request<{ valid: boolean; key_id?: string; fingerprint?: string }>("/api/signing/verify", {
+      method: "POST",
+      body: JSON.stringify({ payload, signature, public_key: publicKey }),
+    });
+  },
+
   // Phase 5: Audit Root Anchoring
   async getElectionAnchors(
     electionId: string,

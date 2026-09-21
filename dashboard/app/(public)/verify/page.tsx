@@ -21,14 +21,7 @@ import {
   Calculator,
   Key,
 } from "lucide-react";
-
-interface VerificationCheckpoint {
-  id: string;
-  name: string;
-  description: string;
-  status: "PASSED" | "FAILED" | "PENDING";
-  details?: string;
-}
+import { runCryptographicVerification, VerificationCheckResult } from "@/lib/verifier-crypto";
 
 export default function IndependentVerificationPage() {
   const { token } = useAuth();
@@ -37,7 +30,7 @@ export default function IndependentVerificationPage() {
   const [loadingElections, setLoadingElections] = useState(true);
   const [verifying, setVerifying] = useState(false);
   const [exportPackage, setExportPackage] = useState<ElectionExportResponse | null>(null);
-  const [checkpoints, setCheckpoints] = useState<VerificationCheckpoint[]>([]);
+  const [checkpoints, setCheckpoints] = useState<VerificationCheckResult[]>([]);
   const [recountedStats, setRecountedStats] = useState<{
     ballots: number;
     candidatesCount: number;
@@ -45,6 +38,7 @@ export default function IndependentVerificationPage() {
     auditEntries: number;
     reconciliationDrift: number;
   } | null>(null);
+  const [mismatches, setMismatches] = useState<string[]>([]);
   const [overallStatus, setOverallStatus] = useState<"PASSED" | "FAILED" | null>(null);
   const [customFileLoaded, setCustomFileLoaded] = useState(false);
 
@@ -84,212 +78,33 @@ export default function IndependentVerificationPage() {
   const runVerificationOnData = async (data: ElectionExportResponse) => {
     setVerifying(true);
     setOverallStatus(null);
+    setMismatches([]);
     setExportPackage(data);
 
     // Give visual progression
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const results: VerificationCheckpoint[] = [];
-    let allPassed = true;
-
-    // 1. Envelope & Version Check
-    const hasEnvelope = Boolean(data.export_version && data.election && data.ballots && data.audit_log);
-    results.push({
-      id: "envelope",
-      name: "1. Export Envelope Integrity",
-      description: "Validates archive structure, version metadata, and root export hash",
-      status: hasEnvelope ? "PASSED" : "FAILED",
-      details: hasEnvelope ? `Version ${data.export_version} package format verified` : "Missing required top-level export keys",
-    });
-    if (!hasEnvelope) allPassed = false;
-
-    // 2. Candidate Configuration Hash Check
-    const candidatesCount = data.candidates?.length || 0;
-    const configHashValid = Boolean(data.election?.configuration_hash);
-    results.push({
-      id: "config_hash",
-      name: "2. Candidate Roster & Configuration Hash",
-      description: "Verifies frozen candidate roster against SHA-256 configuration fingerprint",
-      status: configHashValid ? "PASSED" : "FAILED",
-      details: configHashValid
-        ? `Configuration hash: ${data.election.configuration_hash?.substring(0, 16)}... (${candidatesCount} candidates)`
-        : "Configuration hash missing from export metadata",
-    });
-    if (!configHashValid) allPassed = false;
-
-    // 3. Raw Ballot Hash Recomputation
-    const ballots = data.ballots || [];
-    let ballotHashesValid = true;
-    for (const b of ballots) {
-      if (!b.ballot_hash || b.ballot_hash.length !== 64) {
-        ballotHashesValid = false;
-        break;
-      }
-    }
-    results.push({
-      id: "ballot_hashes",
-      name: "3. Ballot Cryptographic Hashes",
-      description: "Recomputes SHA-256 hash for every raw ballot: SHA-256(election:session:device:candidate:sequence)",
-      status: ballotHashesValid ? "PASSED" : "FAILED",
-      details: ballotHashesValid ? `All ${ballots.length} individual ballot hashes verified intact` : "Found corrupted ballot hash",
-    });
-    if (!ballotHashesValid) allPassed = false;
-
-    // 4. Device Sequence Monotonicity
-    const deviceSequences: Record<string, number[]> = {};
-    let seqValid = true;
-    for (const b of ballots) {
-      if (!deviceSequences[b.device_id]) deviceSequences[b.device_id] = [];
-      deviceSequences[b.device_id].push(b.sequence_number);
-    }
-    for (const dev in deviceSequences) {
-      const seqs = deviceSequences[dev];
-      for (let i = 1; i < seqs.length; i++) {
-        if (seqs[i] <= seqs[i - 1]) {
-          seqValid = false;
-          break;
+    try {
+      const signatureVerifier = async (payload: any, signature: string, publicKey?: string) => {
+        try {
+          const res = await api.verifySignature(payload, signature, publicKey);
+          return Boolean(res.valid);
+        } catch {
+          return false;
         }
-      }
+      };
+
+      const report = await runCryptographicVerification(data, signatureVerifier);
+      setCheckpoints(report.checkpoints);
+      setRecountedStats(report.recountedStats);
+      setMismatches(report.mismatches);
+      setOverallStatus(report.valid ? "PASSED" : "FAILED");
+    } catch (err: any) {
+      alert("Verification processing error: " + (err.message || "Unknown error"));
+      setOverallStatus("FAILED");
+    } finally {
+      setVerifying(false);
     }
-    results.push({
-      id: "device_sequence",
-      name: "4. Device Sequence Continuity",
-      description: "Ensures strictly monotonic sequence numbers per device to prevent replay attacks",
-      status: seqValid ? "PASSED" : "FAILED",
-      details: seqValid ? `Monotonic sequence confirmed across ${Object.keys(deviceSequences).length} devices` : "Found duplicate or decreasing sequence numbers",
-    });
-    if (!seqValid) allPassed = false;
-
-    // 5. Independent Tally Recount (Candidates)
-    const candidateRecount: Record<string, number> = {};
-    for (const c of data.candidates || []) {
-      candidateRecount[c.id] = 0;
-    }
-    for (const b of ballots) {
-      if (candidateRecount[b.candidate_id] !== undefined) {
-        candidateRecount[b.candidate_id]++;
-      }
-    }
-    results.push({
-      id: "candidate_totals",
-      name: "5. Independent Candidate Tally",
-      description: "Re-aggregates votes cast directly from individual raw ballot records",
-      status: "PASSED",
-      details: `Independently tallied ${ballots.length} ballots across ${data.candidates?.length} candidates`,
-    });
-
-    // 6. Device Contribution Recount
-    const deviceRecount: Record<string, number> = {};
-    for (const b of ballots) {
-      deviceRecount[b.device_id] = (deviceRecount[b.device_id] || 0) + 1;
-    }
-    results.push({
-      id: "device_totals",
-      name: "6. Device-Level Ballot Counts",
-      description: "Re-aggregates ballots submitted per physical / simulated hardware device",
-      status: "PASSED",
-      details: `Reconstructed device totals across ${Object.keys(deviceRecount).length} registered units`,
-    });
-
-    // 7. Multi-Point Reconciliation
-    const totalBallots = ballots.length;
-    const sumCandidates = Object.values(candidateRecount).reduce((a, b) => a + b, 0);
-    const sumDevices = Object.values(deviceRecount).reduce((a, b) => a + b, 0);
-    const reconciliationPassed = totalBallots === sumCandidates && totalBallots === sumDevices;
-    const drift = Math.abs(totalBallots - sumCandidates);
-
-    results.push({
-      id: "reconciliation",
-      name: "7. Full Record Reconciliation",
-      description: "Verifies total ballots == sum(candidate tallies) == sum(device contributions)",
-      status: reconciliationPassed ? "PASSED" : "FAILED",
-      details: reconciliationPassed
-        ? `Zero drift: Total (${totalBallots}) == Candidates (${sumCandidates}) == Devices (${sumDevices})`
-        : `Drift detected: Difference of ${drift} ballots`,
-    });
-    if (!reconciliationPassed) allPassed = false;
-
-    // 8. Audit Hash Chain Recomputation
-    const auditLog = data.audit_log || [];
-    let auditChainValid = true;
-    for (let i = 0; i < auditLog.length; i++) {
-      const entry = auditLog[i];
-      if (!entry.entry_hash || entry.entry_hash.length !== 64) {
-        auditChainValid = false;
-        break;
-      }
-      if (i > 0) {
-        const prev = auditLog[i - 1];
-        if (entry.previous_hash !== prev.entry_hash) {
-          auditChainValid = false;
-          break;
-        }
-      }
-    }
-    results.push({
-      id: "audit_chain",
-      name: "8. Tamper-Evident Audit Hash Chain",
-      description: "Recomputes continuous SHA-256 hash chaining across all chronological event entries",
-      status: auditChainValid ? "PASSED" : "FAILED",
-      details: auditChainValid
-        ? `Cryptographic continuity validated for all ${auditLog.length} events from genesis`
-        : "Hash mismatch detected in audit chain link",
-    });
-    if (!auditChainValid) allPassed = false;
-
-    // 9. Digital Result Manifest Signature
-    const hasManifest = Boolean(data.manifest);
-    const hasSignature = Boolean(data.manifest?.digital_signature);
-    results.push({
-      id: "digital_signature",
-      name: "9. Result Manifest & Ed25519 Signature",
-      description: "Validates canonical manifest hash and verifies digital signature authenticity",
-      status: hasSignature ? "PASSED" : hasManifest ? "PENDING" : "FAILED",
-      details: hasSignature
-        ? "Valid Ed25519 digital signature verified against published SecureVOTE authority key"
-        : hasManifest
-        ? "Manifest present but unsigned"
-        : "Manifest not yet generated",
-    });
-    if (!hasManifest) allPassed = false;
-
-    // 10. CDS94 Zero-Knowledge Ballot Validity Proofs
-    const zkpArtifacts = (data as any).zk_proofs || (data as any).encrypted_ballots || [];
-    const hasZkp = Boolean((data as any).zk_valid !== false);
-    results.push({
-      id: "zk_proofs",
-      name: "10. CDS94 Disjunctive ZK Proofs",
-      description: "Verifies Fiat-Shamir disjunctive zero-knowledge proofs (c = c0 + c1 mod q) for 1-hot ballot validity without revealing voter choices",
-      status: hasZkp ? "PASSED" : "FAILED",
-      details: hasZkp
-        ? "All ballot slots verified to encrypt either 0 or 1 with zero witness leakage"
-        : "Disjunctive challenge equation mismatch or missing ZK proof artifact",
-    });
-    if (!hasZkp) allPassed = false;
-
-    // 11. 2-of-3 Threshold Decryption & Chaum-Pedersen DLEQ Proofs
-    const hasThreshold = Boolean((data as any).threshold_tally !== null);
-    results.push({
-      id: "threshold_dleq",
-      name: "11. 2-of-3 Threshold Decryption & DLEQ Proofs",
-      description: "Verifies Chaum-Pedersen discrete logarithm equality proofs (DLEQ) for all QUAL trustee partial decryption shares",
-      status: hasThreshold ? "PASSED" : "FAILED",
-      details: hasThreshold
-        ? "Valid Chaum-Pedersen DLEQ proofs verified for 2-of-3 QUAL trustee decryption shares"
-        : "Insufficient trustee shares or invalid DLEQ proof detected",
-    });
-    if (!hasThreshold) allPassed = false;
-
-    setCheckpoints(results);
-    setRecountedStats({
-      ballots: totalBallots,
-      candidatesCount: data.candidates?.length || 0,
-      devicesCount: Object.keys(deviceRecount).length,
-      auditEntries: auditLog.length,
-      reconciliationDrift: drift,
-    });
-    setOverallStatus(allPassed ? "PASSED" : "FAILED");
-    setVerifying(false);
   };
 
   const [isTamperDemo, setIsTamperDemo] = useState(false);
@@ -473,7 +288,7 @@ export default function IndependentVerificationPage() {
               </h2>
               <p className="text-xs opacity-80">
                 {overallStatus === "PASSED"
-                  ? "All 9 independent mathematical proofs succeeded with zero reconciliation drift."
+                  ? "All verified independent mathematical checks succeeded with zero reconciliation drift."
                   : "Integrity check failure detected in one or more checkpoints."}
               </p>
             </div>
@@ -493,6 +308,21 @@ export default function IndependentVerificationPage() {
               <span>{recountedStats.reconciliationDrift}</span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Explicit Cryptographic Mismatches List */}
+      {mismatches.length > 0 && (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-900 space-y-2 shadow-sm">
+          <div className="font-bold flex items-center gap-1.5 text-rose-800">
+            <AlertTriangle className="w-4 h-4 text-rose-600" />
+            Cryptographic Mismatches / Violations Detected ({mismatches.length})
+          </div>
+          <ul className="list-disc list-inside space-y-1 font-mono text-[11px] text-rose-700">
+            {mismatches.map((m, idx) => (
+              <li key={idx}>{m}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -537,7 +367,7 @@ export default function IndependentVerificationPage() {
                   {cp.status === "FAILED" && (
                     <XCircle className="w-5 h-5 text-rose-500" />
                   )}
-                  {cp.status === "PENDING" && (
+                  {(cp.status === "UNCHECKED" || (cp.status as any) === "PENDING") && (
                     <AlertTriangle className="w-5 h-5 text-amber-500" />
                   )}
                 </div>
