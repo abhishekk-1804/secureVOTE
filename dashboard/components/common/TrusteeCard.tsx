@@ -67,7 +67,7 @@ export function TrusteeCard({
       <div className="space-y-2 mt-4 text-xs font-mono">
         <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80 space-y-1">
           <div className="text-[10px] text-slate-500 uppercase flex items-center justify-between">
-            <span>Public Verification Key $Y_{index}$</span>
+            <span>{`Public Verification Key Y_${index}`}</span>
             <KeyRound className="w-3 h-3 text-slate-500" />
           </div>
           <div className="text-slate-300 text-[11px] break-all select-all font-mono">
@@ -77,7 +77,7 @@ export function TrusteeCard({
 
         <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80 space-y-1">
           <div className="text-[10px] text-slate-500 uppercase flex items-center justify-between">
-            <span>Feldman VSS Commitment $C_{index}$</span>
+            <span>{`Feldman VSS Commitment C_${index}`}</span>
             <Lock className="w-3 h-3 text-slate-500" />
           </div>
           <div className="text-slate-400 text-[11px] truncate font-mono">
@@ -96,7 +96,7 @@ export function TrusteeCard({
           className="text-[10px] text-slate-500 font-mono"
           title="Security Guarantee: Secret share x_i is strictly isolated on the trustee security module"
         >
-          $x_{index}$ strictly isolated
+          {`x_${index} strictly isolated`}
         </div>
       </div>
     </div>

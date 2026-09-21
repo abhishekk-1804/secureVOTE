@@ -27,7 +27,9 @@ const NAV_SECTIONS = [
   {
     title: "Overview",
     items: [
-      { label: "Dashboard", href: "/command", icon: LayoutDashboard },
+      { label: "Command Center", href: "/command", icon: LayoutDashboard },
+      { label: "Electoral Map", href: "/map", icon: MapPin },
+      { label: "Public Explorer", href: "/explorer", icon: Eye },
     ],
   },
   {
@@ -36,16 +38,17 @@ const NAV_SECTIONS = [
       { label: "Election Setup", href: "/election/setup", icon: Settings },
       { label: "Candidates", href: "/election/candidates", icon: Users },
       { label: "Polling Stations", href: "/election/polling-stations", icon: MapPin },
-      { label: "Devices", href: "/election/devices", icon: Cpu },
-      { label: "Polling", href: "/election/polling", icon: Vote },
+      { label: "Devices & EVMs", href: "/election/devices", icon: Cpu },
+      { label: "Polling Console", href: "/election/polling", icon: Vote },
     ],
   },
   {
-    title: "Results & Verification",
+    title: "Results & Cryptography",
     items: [
       { label: "Counting Center", href: "/election/counting", icon: Calculator },
-      { label: "Results", href: "/election/results", icon: BarChart3 },
-      { label: "Verification", href: "/election/verification", icon: CheckCircle },
+      { label: "Results Manifest", href: "/election/results", icon: BarChart3 },
+      { label: "Independent Verifier", href: "/verify", icon: CheckCircle },
+      { label: "Research Specs", href: "/research", icon: ScrollText },
     ],
   },
   {
@@ -60,7 +63,7 @@ const NAV_SECTIONS = [
     title: "Administration",
     items: [
       { label: "Complaints", href: "/election/complaints", icon: MessageSquare },
-      { label: "Simulation", href: "/election/simulation", icon: Play },
+      { label: "Simulation Engine", href: "/election/simulation", icon: Play },
       { label: "Transparency", href: "/election/transparency", icon: Eye },
     ],
   },
