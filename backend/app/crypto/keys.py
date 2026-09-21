@@ -85,16 +85,31 @@ def deserialize_public_key(data: dict[str, Any]) -> ElGamalPublicKey:
         )
 
     try:
-        x = int(data["x"], 16)
-        y = int(data["y"], 16)
-    except (KeyError, ValueError) as e:
+        x_str = data["x"]
+        y_str = data["y"]
+        if not isinstance(x_str, str) or not isinstance(y_str, str):
+            raise SerializationError("Public key coordinate values must be hex strings")
+        if x_str == "infinity" or y_str == "infinity":
+            raise SerializationError("Public key cannot be the point at infinity")
+        if x_str.startswith("-") or y_str.startswith("-"):
+            raise SerializationError("Negative coordinate representations are prohibited")
+        x = int(x_str, 16)
+        y = int(y_str, 16)
+    except SerializationError:
+        raise
+    except (KeyError, ValueError, TypeError) as e:
         raise SerializationError(f"Invalid public key coordinates: {e}")
 
     point = ECPoint(x, y)
     if not point_on_curve(point):
         raise SerializationError("Deserialized point is not on the secp256r1 curve")
+    if point.is_infinity:
+        raise SerializationError("Public key cannot be the point at infinity")
 
-    pub = ElGamalPublicKey(point=point)
+    try:
+        pub = ElGamalPublicKey(point=point)
+    except KeyGenerationError as e:
+        raise SerializationError(f"Invalid public key: {e}")
 
     # Verify fingerprint
     expected_fp = compute_key_fingerprint(pub)

@@ -28,15 +28,31 @@ from app.crypto import PROTOCOL_VERSION
 from app.crypto.exceptions import SerializationError
 
 
+def _validate_no_floats(obj: Any) -> None:
+    """Ensure no floating-point values exist in data destined for canonical serialization."""
+    if isinstance(obj, float):
+        raise SerializationError("Floating-point values are prohibited in canonical serialization")
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(k, float):
+                raise SerializationError("Floating-point keys are prohibited in canonical serialization")
+            _validate_no_floats(v)
+    elif isinstance(obj, (list, tuple)):
+        for item in obj:
+            _validate_no_floats(item)
+
+
 def canonical_json(data: Any) -> str:
     """
     Produce a deterministic canonical JSON string.
 
     - Sorted keys
     - Compact separators (no whitespace)
-    - UTF-8 encoding guaranteed
+    - UTF-8 encoding guaranteed (ensure_ascii=False)
+    - No floating-point values permitted
     - No trailing newline
     """
+    _validate_no_floats(data)
     try:
         return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     except (TypeError, ValueError) as e:

@@ -99,12 +99,14 @@ class SchnorrRepresentationProof:
     s_b: int
 
     def __post_init__(self):
-        if not point_on_curve(self.comm) or self.comm.is_infinity:
+        if not isinstance(self.comm, ECPoint) or not point_on_curve(self.comm) or self.comm.is_infinity:
             raise SchnorrProofError("Commitment point in Schnorr proof is invalid or at infinity")
-        if not (1 <= self.c < CURVE_ORDER):
-            raise SchnorrProofError("Challenge scalar out of valid range")
-        if not (0 <= self.s_a < CURVE_ORDER) or not (0 <= self.s_b < CURVE_ORDER):
-            raise SchnorrProofError("Response scalar out of valid range")
+        if type(self.c) is not int or not (1 <= self.c < CURVE_ORDER):
+            raise SchnorrProofError(f"Challenge scalar out of valid range: {self.c}")
+        if type(self.s_a) is not int or not (0 <= self.s_a < CURVE_ORDER):
+            raise SchnorrProofError(f"Response scalar s_a out of valid range: {self.s_a}")
+        if type(self.s_b) is not int or not (0 <= self.s_b < CURVE_ORDER):
+            raise SchnorrProofError(f"Response scalar s_b out of valid range: {self.s_b}")
 
 
 def prove_schnorr_representation(

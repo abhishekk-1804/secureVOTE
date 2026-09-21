@@ -21,7 +21,7 @@ RESEARCH PROTOTYPE — NOT PRODUCTION ELECTION INFRASTRUCTURE.
 
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import (
@@ -104,18 +104,69 @@ INFINITY = ECPoint(None, None)
 G = ECPoint(_Gx, _Gy)
 
 
-def point_on_curve(p: ECPoint) -> bool:
-    """Verify that a point lies on the secp256r1 curve."""
+def point_on_curve(p: Any) -> bool:
+    """
+    Verify that a point lies on the secp256r1 curve.
+
+    Validates:
+    - Object is an ECPoint instance
+    - Point at infinity is considered on-curve (neutral element)
+    - Affine coordinates x, y are non-boolean integers in [0, _P - 1]
+    - Coordinates satisfy Weierstrass equation: y^2 = x^3 + a*x + b (mod P)
+    """
+    if not isinstance(p, ECPoint):
+        return False
     if p.is_infinity:
         return True
-    assert p.x is not None and p.y is not None
+    if p.x is None or p.y is None:
+        return False
+    if type(p.x) is not int or type(p.y) is not int:
+        return False
+    if not (0 <= p.x < _P and 0 <= p.y < _P):
+        return False
     lhs = (p.y * p.y) % _P
     rhs = (p.x * p.x * p.x + _A * p.x + _B) % _P
     return lhs == rhs
 
 
+def is_valid_public_point(p: Any) -> bool:
+    """
+    Validate that an EC point is a valid non-identity curve point.
+
+    Appropriate for public keys, verification keys, commitments, and C1 components.
+    """
+    return isinstance(p, ECPoint) and not p.is_infinity and point_on_curve(p)
+
+
+def is_valid_scalar(s: Any, allow_zero: bool = False) -> bool:
+    """
+    Validate that a scalar is an integer in the valid curve order range.
+
+    If allow_zero is False (default for keys/nonces), scalar must be in [1, q - 1].
+    If allow_zero is True, scalar must be in [0, q - 1].
+    """
+    if type(s) is not int:
+        return False
+    min_val = 0 if allow_zero else 1
+    return min_val <= s < CURVE_ORDER
+
+
 # ---------------------------------------------------------------------------
 # Fast Jacobian coordinate arithmetic for secp256r1 (a = -3)
+#
+# RESEARCH PROTOTYPE TIMING LIMITATION NOTICE:
+# This arithmetic implementation uses Python's arbitrary-precision integers
+# and a standard double-and-add scalar multiplication loop.
+# It is NOT constant-time.
+#
+# Sensitive operations involving private keys (x), secret shares (x_i), or
+# ephemeral nonces (r, w) leak timing and branch patterns to local observers.
+#
+# In production election systems, all private-scalar elliptic curve operations
+# MUST use constant-time primitives (e.g. Montgomery ladder, fixed-window
+# comb, or audited C/Rust libraries such as libsodium / BoringSSL).
+# This prototype is designed and intended strictly for educational research,
+# algorithm simulation, and independent mathematical audit demonstration.
 # ---------------------------------------------------------------------------
 
 def _jacobian_double(X: int, Y: int, Z: int) -> tuple[int, int, int]:
@@ -258,6 +309,8 @@ class ElGamalCiphertext:
     def __post_init__(self):
         if not point_on_curve(self.c1):
             raise InvalidCiphertextError("C1 is not on the secp256r1 curve")
+        if self.c1.is_infinity:
+            raise InvalidCiphertextError("C1 cannot be the point at infinity")
         if not point_on_curve(self.c2):
             raise InvalidCiphertextError("C2 is not on the secp256r1 curve")
 

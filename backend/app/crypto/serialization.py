@@ -31,12 +31,22 @@ def serialize_point(p: ECPoint) -> dict[str, str]:
 
 def deserialize_point(data: dict[str, str]) -> ECPoint:
     """Deserialize an EC point from a JSON dictionary."""
-    if data.get("x") == "infinity":
+    if not isinstance(data, dict):
+        raise SerializationError(f"Point data must be a dictionary, got {type(data).__name__}")
+    if data.get("x") == "infinity" and data.get("y") == "infinity":
         return INFINITY
+    if data.get("x") == "infinity" or data.get("y") == "infinity":
+        raise SerializationError("Both coordinates must be 'infinity' for the point at infinity")
     try:
-        x = int(data["x"], 16)
-        y = int(data["y"], 16)
-    except (KeyError, ValueError) as e:
+        x_str = data["x"]
+        y_str = data["y"]
+        if not isinstance(x_str, str) or not isinstance(y_str, str):
+            raise SerializationError("Point coordinate values must be hex strings")
+        if x_str.startswith("-") or y_str.startswith("-"):
+            raise SerializationError("Negative coordinate representations are prohibited")
+        x = int(x_str, 16)
+        y = int(y_str, 16)
+    except (KeyError, ValueError, TypeError) as e:
         raise SerializationError(f"Invalid point coordinates: {e}")
 
     point = ECPoint(x, y)

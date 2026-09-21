@@ -41,11 +41,13 @@ class ChaumPedersenProof:
     s: int
 
     def __post_init__(self):
-        if not point_on_curve(self.a) or not point_on_curve(self.b):
-            raise InvalidProofError("Proof commitment points not on secp256r1")
-        if not (1 <= self.c < CURVE_ORDER):
+        if not isinstance(self.a, ECPoint) or not point_on_curve(self.a) or self.a.is_infinity:
+            raise InvalidProofError("Proof commitment point 'a' is off-curve, at infinity, or invalid")
+        if not isinstance(self.b, ECPoint) or not point_on_curve(self.b) or self.b.is_infinity:
+            raise InvalidProofError("Proof commitment point 'b' is off-curve, at infinity, or invalid")
+        if type(self.c) is not int or not (1 <= self.c < CURVE_ORDER):
             raise InvalidProofError("Proof challenge scalar out of valid range")
-        if not (0 <= self.s < CURVE_ORDER):
+        if type(self.s) is not int or not (0 <= self.s < CURVE_ORDER):
             raise InvalidProofError("Proof response scalar out of valid range")
 
 

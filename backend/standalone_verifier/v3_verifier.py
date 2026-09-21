@@ -94,7 +94,7 @@ class StandaloneV3ElectionVerifier:
 
         # Checkpoint 1: Protocol Version
         proto = package.get("protocol_version")
-        allowed_protos = {PROTOCOL_VERSION, "SECUREVOTE31"}
+        allowed_protos = {PROTOCOL_VERSION, "SECUREVOTE31", "SECUREVOTE32", "SECUREVOTE33"}
         if proto in allowed_protos:
             record("checkpoint_1_protocol_version", True, f"Protocol version {proto} verified")
         else:
@@ -345,6 +345,60 @@ class StandaloneV3ElectionVerifier:
         else:
             record("checkpoint_10_reconciliation", True, "No decrypted tally provided; encrypted stage verified")
 
+        # Checkpoint 11: Threshold Tally Verification (if present)
+        threshold_tally_pkg = package.get("threshold_tally")
+        threshold_status = "NOT_PRESENT"
+        if threshold_tally_pkg:
+            try:
+                from app.crypto.threshold.serialization import (
+                    deserialize_dkg_manifest,
+                    deserialize_tally_partial_decryption_package,
+                    deserialize_threshold_tally_result,
+                )
+                from app.crypto.threshold.tally import ThresholdTallyVerifier
+
+                manifest = deserialize_dkg_manifest(threshold_tally_pkg["manifest"])
+                trustee_packages = {
+                    int(tid): deserialize_tally_partial_decryption_package(tpkg)
+                    for tid, tpkg in threshold_tally_pkg["trustee_packages"].items()
+                }
+                tally_result = deserialize_threshold_tally_result(threshold_tally_pkg["tally_result"])
+
+                ThresholdTallyVerifier.verify(
+                    manifest=manifest,
+                    encrypted_tally=encrypted_tally,
+                    trustee_packages=trustee_packages,
+                    tally_result=tally_result,
+                    expected_protocol_version=tally_result.protocol_version,
+                )
+                threshold_status = "VALID"
+                record(
+                    "checkpoint_11_threshold_tally",
+                    True,
+                    "Threshold tally combination, Chaum-Pedersen equality proofs, and Lagrange interpolation independently verified",
+                    details={
+                        "threshold_status": "VALID",
+                        "threshold": tally_result.threshold,
+                        "selected_trustees": tally_result.selected_trustees,
+                        "total_votes": tally_result.total_votes,
+                    },
+                )
+            except Exception as e:
+                threshold_status = "INVALID"
+                record(
+                    "checkpoint_11_threshold_tally",
+                    False,
+                    f"Threshold tally verification failed: {e}",
+                    details={"threshold_status": "INVALID", "error": str(e)},
+                )
+        else:
+            record(
+                "checkpoint_11_threshold_tally",
+                True,
+                "No threshold tally package present (centralized or unfinalized tally mode - SKIPPED)",
+                details={"threshold_status": "NOT_PRESENT"},
+            )
+
         # Granular diagnostic category states
         c_map = {c["checkpoint"]: (c["status"] == "PASSED") for c in checkpoints}
         ciphertext_structurally_valid = c_map.get("checkpoint_4_ballot_structure", False) and c_map.get("checkpoint_5_ciphertext_curve", False)
@@ -354,6 +408,7 @@ class StandaloneV3ElectionVerifier:
         ballot_validity_valid = (zk_status == "VALID")
         ballot_aggregation_valid = c_map.get("checkpoint_8_homomorphic_aggregation", False)
         tally_valid = c_map.get("checkpoint_9_tally_commitment", False) and c_map.get("checkpoint_10_reconciliation", False)
+        threshold_valid = (threshold_status != "INVALID")
 
         return {
             "verified": overall_passed,
@@ -370,6 +425,8 @@ class StandaloneV3ElectionVerifier:
             "ballot_validity_status": zk_status,
             "ballot_aggregation_valid": ballot_aggregation_valid,
             "tally_valid": tally_valid,
+            "threshold_valid": threshold_valid,
+            "threshold_status": threshold_status,
             "checkpoints": checkpoints,
         }
 

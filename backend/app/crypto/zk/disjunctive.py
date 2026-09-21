@@ -45,10 +45,10 @@ class Disjunctive01Proof:
 
     def __post_init__(self):
         for pt in [self.a0, self.b0, self.a1, self.b1]:
-            if not point_on_curve(pt):
-                raise InvalidProofError("Commitment point not on secp256r1")
+            if not isinstance(pt, ECPoint) or not point_on_curve(pt) or pt.is_infinity:
+                raise InvalidProofError("Commitment point is off-curve, at infinity, or invalid")
         for sc in [self.c0, self.c1, self.s0, self.s1]:
-            if not (0 <= sc < CURVE_ORDER):
+            if type(sc) is not int or not (0 <= sc < CURVE_ORDER):
                 raise InvalidProofError(f"Scalar {sc} out of valid group order range")
 
 

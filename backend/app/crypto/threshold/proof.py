@@ -251,10 +251,10 @@ def check_partial_decryption_proof(
         raise PartialDecryptionProofError("Commitment comm_2 is off-curve or at infinity")
 
     # 2. Scalar range checks
-    if not isinstance(proof.c, int) or not (1 <= proof.c < CURVE_ORDER):
+    if not isinstance(proof.c, int) or type(proof.c) is not int or not (1 <= proof.c < CURVE_ORDER):
         raise PartialDecryptionProofError(f"Challenge c is out of valid range [1, q-1]: {proof.c}")
 
-    if not isinstance(proof.s, int) or not (0 <= proof.s < CURVE_ORDER):
+    if not isinstance(proof.s, int) or type(proof.s) is not int or not (0 <= proof.s < CURVE_ORDER):
         raise PartialDecryptionProofError(f"Response scalar s is out of valid range [0, q-1]: {proof.s}")
 
     # 3. Fiat-Shamir challenge reconstruction
