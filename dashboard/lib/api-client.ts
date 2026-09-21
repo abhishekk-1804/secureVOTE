@@ -34,6 +34,12 @@ import {
   SimulationResponse,
   TransparencyOverview,
   SessionResponse,
+  StateFeature,
+  ParliamentaryConstituency,
+  AssemblyConstituency,
+  PollingStationData,
+  SyntheticCandidate,
+  NationalSummaryResponse,
 } from "./types";
 
 
@@ -466,8 +472,24 @@ export const api = {
     return request<any>(`/api/geography/pc/${pcId}`);
   },
 
-  async getGeographyMapData(): Promise<{ viewbox: string; title: string; features: any[] }> {
-    return request<{ viewbox: string; title: string; features: any[] }>('/api/geography/map-data');
+  async getGeographyMapData(): Promise<{ viewbox: string; title: string; features: StateFeature[] }> {
+    return request<{ viewbox: string; title: string; features: StateFeature[] }>('/api/geography/map-data');
+  },
+
+  async getNationalSummary(): Promise<NationalSummaryResponse> {
+    return request<NationalSummaryResponse>('/api/geography/national-summary');
+  },
+
+  async getPCPollingStations(pcId: string): Promise<{ pc_id: string; polling_stations: PollingStationData[]; total: number }> {
+    return request<{ pc_id: string; polling_stations: PollingStationData[]; total: number }>(`/api/geography/pc/${pcId}/polling-stations`);
+  },
+
+  async getPCCandidates(pcId: string): Promise<{ pc_id: string; candidates: SyntheticCandidate[]; total: number }> {
+    return request<{ pc_id: string; candidates: SyntheticCandidate[]; total: number }>(`/api/geography/pc/${pcId}/candidates`);
+  },
+
+  async getPollingStation(stationCode: string): Promise<PollingStationData> {
+    return request<PollingStationData>(`/api/geography/polling-station/${stationCode}`);
   },
 
   // Dual-Mode Overseas / NRI Elector Simulation

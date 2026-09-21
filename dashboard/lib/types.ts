@@ -511,3 +511,85 @@ export interface V3VerifyResponse {
     details?: Record<string, any>;
   }>;
 }
+
+// ---------------------------------------------------------------------------
+// SecureVOTE 3.3 Indian Electoral Platform Types
+// ---------------------------------------------------------------------------
+
+export interface StateFeature {
+  code: string;
+  name: string;
+  capital: string;
+  region: string;
+  pc_count: number;
+  ac_count: number;
+  elector_count_est: number;
+  d: string;
+  center: [number, number];
+  turnout_pct: number;
+  anomalies_detected: number;
+  verification_status: 'VERIFIED' | 'WARNING' | 'PENDING' | 'READY';
+}
+
+export interface AssemblyConstituency {
+  ac_no: number;
+  ac_name: string;
+  category: string;
+}
+
+export interface ParliamentaryConstituency {
+  pc_id: string;
+  pc_no: number;
+  pc_name: string;
+  state_code: string;
+  state_name: string;
+  category: string;
+  acs: AssemblyConstituency[];
+  estimated_electors: number;
+  simulated_turnout_pct?: number;
+}
+
+export interface PollingStationData {
+  station_code: string;
+  station_name: string;
+  location: string;
+  pc_id: string;
+  state_code: string;
+  registered_voters: number;
+  ballots_cast: number;
+  turnout_pct: number;
+  cu_serial: string;
+  bu_serial: string;
+  vvpat_serial: string;
+  status: 'VERIFIED' | 'ONLINE' | 'READY';
+  crypto_status: 'PROOF_VALID' | 'PENDING' | 'DISCREPANCY';
+}
+
+export interface SyntheticCandidate {
+  id: string;
+  name: string;
+  party: string;
+  symbol: string;
+  position: number;
+}
+
+export interface NationalSummaryResponse {
+  total_states: number;
+  total_pcs: number;
+  total_acs: number;
+  national_registered_electors_est: number;
+  simulated_ballots_cast: number;
+  national_turnout_pct: number;
+  active_trustees: number;
+  trustee_threshold: string;
+  verification_integrity_pct: number;
+  disclaimer: string;
+  states_summary: Array<{
+    code: string;
+    name: string;
+    pcs: number;
+    turnout: number;
+    status: string;
+  }>;
+}
+
