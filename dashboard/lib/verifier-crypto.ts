@@ -351,13 +351,13 @@ export async function runCryptographicVerification(
     }
 
     const expectedPrev = i > 0 ? sortedAudit[i - 1].entry_hash : "GENESIS";
-    if (i > 0 && entry.previous_hash !== expectedPrev) {
+    if (entry.previous_hash !== expectedPrev) {
       auditChainValid = false;
       auditErrors++;
       mismatches.push(`Audit previous_hash mismatch at seq ${entry.sequence_number}: expected ${expectedPrev?.slice(0, 8)}, got ${entry.previous_hash?.slice(0, 8)}`);
     }
 
-    const recomputedEntryHash = await recomputeAuditEntryHash(entry, i === 0 ? "GENESIS" : sortedAudit[i - 1].entry_hash);
+    const recomputedEntryHash = await recomputeAuditEntryHash(entry, entry.previous_hash);
     if (!entry.entry_hash || entry.entry_hash.toLowerCase() !== recomputedEntryHash.toLowerCase()) {
       auditChainValid = false;
       auditErrors++;
@@ -383,6 +383,36 @@ export async function runCryptographicVerification(
   let manifestDetails = "Manifest not yet generated for this election state";
 
   if (manifest) {
+    let manifestConsistent = true;
+    if (manifest.total_ballots !== undefined && manifest.total_ballots !== totalBallots) {
+      manifestConsistent = false;
+      mismatches.push(`Manifest total_ballots discrepancy: manifest claims ${manifest.total_ballots}, actual ballots count is ${totalBallots}`);
+    }
+
+    if (manifest.candidate_totals) {
+      for (const cid in candidateRecount) {
+        if ((manifest.candidate_totals[cid] ?? 0) !== candidateRecount[cid]) {
+          manifestConsistent = false;
+          mismatches.push(`Manifest candidate tally mismatch for ${cid}: manifest has ${manifest.candidate_totals[cid]}, recount has ${candidateRecount[cid]}`);
+        }
+      }
+    }
+
+    if (manifest.device_totals) {
+      for (const did in deviceRecount) {
+        if ((manifest.device_totals[did] ?? 0) !== deviceRecount[did]) {
+          manifestConsistent = false;
+          mismatches.push(`Manifest device tally mismatch for ${did}: manifest has ${manifest.device_totals[did]}, recount has ${deviceRecount[did]}`);
+        }
+      }
+      for (const did in manifest.device_totals) {
+        if ((deviceRecount[did] ?? 0) !== manifest.device_totals[did]) {
+          manifestConsistent = false;
+          mismatches.push(`Manifest device tally mismatch for ${did}: manifest has ${manifest.device_totals[did]}, recount has ${deviceRecount[did] ?? 0}`);
+        }
+      }
+    }
+
     const recomputedMHash = await recomputeManifestHash(
       electionId,
       totalBallots,
@@ -396,10 +426,12 @@ export async function runCryptographicVerification(
     const storedMHash = manifest.manifest_hash || "";
     const mHashMatch = storedMHash.toLowerCase() === recomputedMHash.toLowerCase();
 
-    if (!mHashMatch) {
+    if (!manifestConsistent || !mHashMatch) {
       manifestStatus = "FAILED";
-      manifestDetails = `Manifest hash mismatch! Stored: ${storedMHash.slice(0, 12)}..., Recomputed: ${recomputedMHash.slice(0, 12)}...`;
-      mismatches.push(manifestDetails);
+      manifestDetails = !mHashMatch
+        ? `Manifest hash mismatch! Stored: ${storedMHash.slice(0, 12)}..., Recomputed: ${recomputedMHash.slice(0, 12)}...`
+        : `Manifest payload inconsistency detected with raw recount!`;
+      if (!mHashMatch) mismatches.push(manifestDetails);
       overallValid = false;
     } else {
       // Check digital signature
@@ -430,7 +462,7 @@ export async function runCryptographicVerification(
         }
       } else {
         manifestStatus = "UNCHECKED";
-        manifestDetails = "Ed25519 signature present; cryptographic verification requires authority verification key";
+        manifestDetails = "Signature present — cryptographic signature verification not performed by this browser verifier.";
       }
     }
   }

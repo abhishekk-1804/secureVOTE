@@ -122,7 +122,7 @@ Latest project validation checkpoint:
 |---|---:|
 | Backend test suite | **315 / 315 passed** |
 | Firmware native tests | **17 / 17 passed** |
-| Dashboard tests | **45 / 45 passed (10 test files)** |
+| Dashboard tests | **59 / 59 passed (10 test files)** |
 | Next.js production build | **45 / 45 routes compiled** |
 | Standalone verifier tests | **12 / 12 passed** |
 | Attack suite | **20 / 20 passed** |
