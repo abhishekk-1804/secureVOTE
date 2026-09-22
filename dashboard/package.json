@@ -13,7 +13,7 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
-    "next": "14.2.24",
+    "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.6.0"
@@ -27,9 +27,16 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "jsdom": "^25.0.1",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.28",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.0",
     "vitest": "^2.1.8"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "$postcss"
+    },
+    "vite": "^6.4.3",
+    "esbuild": "^0.25.0"
   }
 }
