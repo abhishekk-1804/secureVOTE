@@ -60,6 +60,9 @@ from standalone_verifier.bundle import (
 class BundleReader:
     """Safely reads files from either a directory bundle or a ZIP bundle."""
 
+    MAX_FILE_BYTES = 50 * 1024 * 1024       # 50 MB per artifact limit
+    MAX_TOTAL_BYTES = 500 * 1024 * 1024     # 500 MB cumulative decompressed limit
+
     def __init__(self, bundle_path: str):
         self.bundle_path = os.path.abspath(bundle_path)
         self.is_zip = zipfile.is_zipfile(self.bundle_path) if os.path.isfile(self.bundle_path) else False
@@ -68,10 +71,42 @@ class BundleReader:
 
         if self.is_zip:
             self.zf = zipfile.ZipFile(self.bundle_path, "r")
-            names = self.zf.namelist()
-            if len(names) != len(set(names)):
+            infolist = self.zf.infolist()
+            total_uncompressed = sum(info.file_size for info in infolist)
+            if total_uncompressed > self.MAX_TOTAL_BYTES:
                 self.zf.close()
-                raise ValueError("ZIP bundle contains duplicate member names (archive entry shadowing detected)")
+                raise ValueError(
+                    f"ZIP bundle cumulative uncompressed size ({total_uncompressed} bytes) exceeds limit ({self.MAX_TOTAL_BYTES} bytes)"
+                )
+
+            seen_canonical: dict[str, str] = {}
+            for info in infolist:
+                if info.file_size > self.MAX_FILE_BYTES:
+                    self.zf.close()
+                    raise ValueError(
+                        f"ZIP member {info.filename} exceeds maximum allowed size ({info.file_size} > {self.MAX_FILE_BYTES})"
+                    )
+
+                mode = info.external_attr >> 16
+                if mode and (mode & 0o170000 == 0o120000):
+                    self.zf.close()
+                    raise ValueError(f"ZIP bundle contains symbolic link entry: {info.filename}")
+
+                name = info.filename
+                if name.endswith("/"):
+                    continue
+                try:
+                    canon = normalize_bundle_path(name)
+                except Exception as e:
+                    self.zf.close()
+                    raise ValueError(f"ZIP bundle contains invalid member path '{name}': {e}")
+
+                if canon in seen_canonical:
+                    self.zf.close()
+                    raise ValueError(
+                        f"ZIP bundle contains duplicate member names (archive entry shadowing detected): '{name}' and '{seen_canonical[canon]}' both resolve to '{canon}'"
+                    )
+                seen_canonical[canon] = name
         else:
             self.zf = None
 
@@ -79,17 +114,23 @@ class BundleReader:
         clean = normalize_bundle_path(rel_path)
         if self.is_zip:
             try:
-                return self.zf.read(clean)
+                data = self.zf.read(clean)
+                if len(data) > self.MAX_FILE_BYTES:
+                    raise ValueError(f"Artifact {clean} exceeds maximum file size ({len(data)} > {self.MAX_FILE_BYTES})")
+                return data
             except KeyError:
                 raise FileNotFoundError(f"Artifact not found in zip bundle: {clean}")
         else:
-            full_path = os.path.join(self.bundle_path, clean)
-            common = os.path.commonpath([self.bundle_path, full_path])
-            if common != self.bundle_path:
-                raise PermissionError(f"Path traversal detected: {rel_path}")
-            if not os.path.isfile(full_path):
+            raw_full = os.path.join(self.bundle_path, clean)
+            real_full = os.path.realpath(raw_full)
+            real_bundle = os.path.realpath(self.bundle_path)
+            if not (real_full == real_bundle or real_full.startswith(real_bundle + os.sep)):
+                raise PermissionError(f"Symlink or directory traversal escape detected: {rel_path}")
+            if not os.path.isfile(real_full):
                 raise FileNotFoundError(f"Artifact not found in directory bundle: {clean}")
-            with open(full_path, "rb") as f:
+            if os.path.getsize(real_full) > self.MAX_FILE_BYTES:
+                raise ValueError(f"Artifact {clean} exceeds maximum file size ({os.path.getsize(real_full)} > {self.MAX_FILE_BYTES})")
+            with open(real_full, "rb") as f:
                 return f.read()
 
     def read_json(self, rel_path: str) -> Any:
@@ -105,8 +146,12 @@ class BundleReader:
             if self.is_zip:
                 return clean in self.zf.namelist()
             else:
-                full_path = os.path.join(self.bundle_path, clean)
-                return os.path.isfile(full_path)
+                raw_full = os.path.join(self.bundle_path, clean)
+                real_full = os.path.realpath(raw_full)
+                real_bundle = os.path.realpath(self.bundle_path)
+                if not (real_full == real_bundle or real_full.startswith(real_bundle + os.sep)):
+                    return False
+                return os.path.isfile(real_full)
         except Exception:
             return False
 
@@ -119,11 +164,14 @@ class BundleReader:
             ]
         else:
             result = []
+            real_bundle = os.path.realpath(self.bundle_path)
             for root, _, files in os.walk(self.bundle_path):
                 for f in files:
                     full = os.path.join(root, f)
-                    rel = os.path.relpath(full, self.bundle_path).replace("\\", "/")
-                    result.append(rel)
+                    real_full = os.path.realpath(full)
+                    if real_full == real_bundle or real_full.startswith(real_bundle + os.sep):
+                        rel = os.path.relpath(full, self.bundle_path).replace("\\", "/")
+                        result.append(rel)
             return result
 
     def close(self) -> None:

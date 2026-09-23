@@ -105,6 +105,9 @@ class StandaloneV3ElectionVerifier:
         pub_key_data = package.get("public_key")
         try:
             public_key = deserialize_public_key(pub_key_data)
+            if public_key.point.is_infinity or not point_on_curve(public_key.point):
+                record("checkpoint_2_public_key", False, "Public key point is off-curve or at infinity")
+                return {"verified": False, "checkpoints": checkpoints}
             expected_fp = pub_key_data.get("fingerprint")
             actual_fp = compute_key_fingerprint(public_key)
             if expected_fp == actual_fp:
@@ -150,7 +153,7 @@ class StandaloneV3ElectionVerifier:
             try:
                 for slot_idx, slot in enumerate(b["encrypted_vote"]["slots"]):
                     ct = deserialize_ciphertext(slot)
-                    if not point_on_curve(ct.c1) or not point_on_curve(ct.c2):
+                    if not point_on_curve(ct.c1) or ct.c1.is_infinity or not point_on_curve(ct.c2):
                         curve_invalid.append((idx, slot_idx))
             except Exception:
                 curve_invalid.append((idx, -1))
@@ -324,13 +327,24 @@ class StandaloneV3ElectionVerifier:
         # Checkpoint 10: Tally Decryption & Reconciliation
         decrypted_tally = package.get("decrypted_tally")
         if decrypted_tally:
-            tallies = decrypted_tally.get("candidate_tallies", {})
-            total_votes = sum(tallies.values())
-            tally_ballots = decrypted_tally.get("total_ballots", 0)
-            if total_votes == tally_ballots and tally_ballots == ballot_count:
-                record("checkpoint_10_reconciliation", True, f"Zero-drift reconciliation verified: {total_votes} votes = {ballot_count} ballots")
+            tallies = decrypted_tally.get("candidate_tallies")
+            tally_ballots = decrypted_tally.get("total_ballots")
+            if not isinstance(tallies, dict):
+                record("checkpoint_10_reconciliation", False, "candidate_tallies must be a dictionary")
+            elif type(tally_ballots) is not int or isinstance(tally_ballots, bool) or tally_ballots < 0:
+                record("checkpoint_10_reconciliation", False, f"Invalid total_ballots in decrypted_tally: {tally_ballots!r}")
+            elif any(type(v) is not int or isinstance(v, bool) or v < 0 for v in tallies.values()):
+                record("checkpoint_10_reconciliation", False, "candidate_tallies contains negative, boolean, or non-integer counts")
+            elif set(tallies.keys()) != set(candidates):
+                missing = set(candidates) - set(tallies.keys())
+                unknown = set(tallies.keys()) - set(candidates)
+                record("checkpoint_10_reconciliation", False, f"Candidate mismatch in decrypted tally: missing={sorted(list(missing))}, unknown={sorted(list(unknown))}")
             else:
-                record("checkpoint_10_reconciliation", False, f"Reconciliation drift: votes={total_votes}, declared={tally_ballots}, ballots={ballot_count}")
+                total_votes = sum(tallies.values())
+                if total_votes == tally_ballots and tally_ballots == ballot_count:
+                    record("checkpoint_10_reconciliation", True, f"Zero-drift reconciliation verified: {total_votes} votes = {ballot_count} ballots")
+                else:
+                    record("checkpoint_10_reconciliation", False, f"Reconciliation drift: votes={total_votes}, declared={tally_ballots}, ballots={ballot_count}")
         elif private_key and encrypted_tally:
             try:
                 dec = decrypt_tally(private_key, encrypted_tally)
@@ -343,7 +357,7 @@ class StandaloneV3ElectionVerifier:
             except Exception as e:
                 record("checkpoint_10_reconciliation", False, f"Decryption failed: {e}")
         else:
-            record("checkpoint_10_reconciliation", True, "No decrypted tally provided; encrypted stage verified")
+            record("checkpoint_10_reconciliation", True, "No decrypted tally provided; encrypted stage verified (reconciliation - NOT_APPLICABLE)", details={"status": "NOT_APPLICABLE"})
 
         # Checkpoint 11: Threshold Tally Verification (if present)
         threshold_tally_pkg = package.get("threshold_tally")

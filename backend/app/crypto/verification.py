@@ -92,6 +92,21 @@ class V3Verifier:
                 "status": "FAILED",
                 "details": f"Expected artifact_type ENCRYPTED_BALLOT, got {artifact.get('artifact_type')}",
             }
+        enc_vote = artifact.get("encrypted_vote")
+        if not isinstance(enc_vote, dict):
+            return {
+                "checkpoint": "ballot_structure",
+                "status": "FAILED",
+                "details": "encrypted_vote must be a dictionary",
+            }
+        slots = enc_vote.get("slots")
+        cand_cnt = enc_vote.get("candidate_count")
+        if not isinstance(slots, list) or type(cand_cnt) is not int or isinstance(cand_cnt, bool) or len(slots) != cand_cnt:
+            return {
+                "checkpoint": "ballot_structure",
+                "status": "FAILED",
+                "details": f"Slot count mismatch with candidate_count: {len(slots) if isinstance(slots, list) else 'invalid'} != {cand_cnt}",
+            }
         return {
             "checkpoint": "ballot_structure",
             "status": "PASSED",
@@ -105,11 +120,11 @@ class V3Verifier:
             encrypted_vote = artifact["encrypted_vote"]
             for i, slot in enumerate(encrypted_vote["slots"]):
                 ct = deserialize_ciphertext(slot)
-                if not point_on_curve(ct.c1):
+                if not point_on_curve(ct.c1) or ct.c1.is_infinity:
                     return {
                         "checkpoint": "ciphertext_integrity",
                         "status": "FAILED",
-                        "details": f"Slot {i}: C1 is not on secp256r1",
+                        "details": f"Slot {i}: C1 is not on secp256r1 or is at infinity",
                     }
                 if not point_on_curve(ct.c2):
                     return {
@@ -270,9 +285,34 @@ class V3Verifier:
     @staticmethod
     def verify_tally_reconciliation(decrypted_tally: dict[str, Any]) -> dict[str, str]:
         """Checkpoint 9: Verify tally reconciliation (sum = ballot_count)."""
-        tallies = decrypted_tally.get("candidate_tallies", {})
-        total = sum(tallies.values())
+        if not isinstance(decrypted_tally, dict):
+            return {
+                "checkpoint": "tally_reconciliation",
+                "status": "FAILED",
+                "details": "decrypted_tally must be a dictionary",
+            }
+        tallies = decrypted_tally.get("candidate_tallies")
+        if not isinstance(tallies, dict):
+            return {
+                "checkpoint": "tally_reconciliation",
+                "status": "FAILED",
+                "details": "candidate_tallies must be a dictionary",
+            }
         expected = decrypted_tally.get("ballot_count", 0)
+        if type(expected) is not int or isinstance(expected, bool) or expected < 0:
+            return {
+                "checkpoint": "tally_reconciliation",
+                "status": "FAILED",
+                "details": f"Invalid ballot_count in decrypted_tally: {expected!r}",
+            }
+        for cand, val in tallies.items():
+            if type(val) is not int or isinstance(val, bool) or val < 0:
+                return {
+                    "checkpoint": "tally_reconciliation",
+                    "status": "FAILED",
+                    "details": f"Invalid tally count for candidate {cand}: {val!r}",
+                }
+        total = sum(tallies.values())
         if total != expected:
             return {
                 "checkpoint": "tally_reconciliation",
