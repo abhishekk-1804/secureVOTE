@@ -278,7 +278,7 @@ class ElectionService:
         with the stored hash. Returns (is_valid, stored_hash, computed_hash).
 
         Any mismatch indicates configuration was modified after locking —
-        a CONFIGURATION HASH MISMATCH (spec Â§12 attack #2).
+        a CONFIGURATION HASH MISMATCH (spec §12 attack #2).
         """
         election = await ElectionService.get_election(db, election_id)
         candidates = await ElectionService.get_candidates(db, election_id)

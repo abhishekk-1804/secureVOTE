@@ -36,14 +36,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow dashboard dev server
+# CORS — allow dashboard dev server and configured origins
+cors_origins_list = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://secure-vote-eta.vercel.app",
-],
+    allow_origins=cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

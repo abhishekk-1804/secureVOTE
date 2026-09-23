@@ -19,7 +19,7 @@ export interface VerificationCheckResult {
   id: string;
   name: string;
   description: string;
-  status: "PASSED" | "FAILED" | "UNCHECKED";
+  status: "PASSED" | "FAILED" | "UNCHECKED" | "SERVER_ASSERTED" | "NOT_APPLICABLE";
   details: string;
   errorCount?: number;
 }
@@ -476,9 +476,9 @@ export async function runCryptographicVerification(
   });
 
   // 10. CDS94 Zero-Knowledge Ballot Validity Proofs
-  const zkpStatus: "PASSED" | "FAILED" | "UNCHECKED" =
+  const zkpStatus: "PASSED" | "FAILED" | "UNCHECKED" | "SERVER_ASSERTED" =
     (data as any).zk_valid === true
-      ? "PASSED"
+      ? "SERVER_ASSERTED"
       : (data as any).zk_valid === false
       ? "FAILED"
       : "UNCHECKED";
@@ -488,18 +488,18 @@ export async function runCryptographicVerification(
     description: "Verifies Fiat-Shamir disjunctive zero-knowledge proofs (c = c0 + c1 mod q) for 1-hot ballot validity without revealing voter choices",
     status: zkpStatus,
     details:
-      zkpStatus === "PASSED"
-        ? "All ballot slots verified to encrypt either 0 or 1 with zero witness leakage"
+      zkpStatus === "SERVER_ASSERTED"
+        ? "Server asserted ZK validity (zk_valid: true). Note: Full secp256r1 elliptic curve zero-knowledge proofs are not verified in browser memory; run the standalone Python CLI verifier for complete client-side mathematical re-evaluation."
         : zkpStatus === "FAILED"
-        ? "Disjunctive challenge equation mismatch or invalid proof detected"
+        ? "Disjunctive challenge equation mismatch or invalid proof detected by server"
         : "ZK proof artifacts not present in this export package (v3.1 ZK extension required)",
   });
   if (zkpStatus === "FAILED") overallValid = false;
 
   // 11. 2-of-3 Threshold Decryption & Chaum-Pedersen DLEQ Proofs
-  const thresholdStatus: "PASSED" | "FAILED" | "UNCHECKED" =
+  const thresholdStatus: "PASSED" | "FAILED" | "UNCHECKED" | "SERVER_ASSERTED" =
     (data as any).threshold_tally !== undefined && (data as any).threshold_tally !== null
-      ? "PASSED"
+      ? "SERVER_ASSERTED"
       : "UNCHECKED";
   checkpoints.push({
     id: "threshold_dleq",
@@ -507,8 +507,8 @@ export async function runCryptographicVerification(
     description: "Verifies Chaum-Pedersen discrete logarithm equality proofs (DLEQ) for all QUAL trustee partial decryption shares",
     status: thresholdStatus,
     details:
-      thresholdStatus === "PASSED"
-        ? "Valid Chaum-Pedersen DLEQ proofs verified for 2-of-3 QUAL trustee decryption shares"
+      thresholdStatus === "SERVER_ASSERTED"
+        ? "Server asserted threshold tally present. Note: Full secp256r1 Chaum-Pedersen DLEQ proofs and Lagrange combinations are not verified in browser memory; run the standalone Python CLI verifier for complete client-side mathematical re-evaluation."
         : "Threshold decryption not executed for this election state (v3.2 threshold tally required)",
   });
 

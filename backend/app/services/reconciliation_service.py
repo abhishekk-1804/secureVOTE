@@ -1,7 +1,7 @@
 """
 Reconciliation service for SecureVOTE.
 
-Performs exact reconciliation of election results per spec Â§10:
+Performs exact reconciliation of election results per spec §10:
 sum(candidate_totals) == total_valid_ballots AND
 sum(device_totals) == total_ballots must hold with ZERO drift.
 Any mismatch is a RECONCILIATION FAILURE — there is no tolerance band.
@@ -71,7 +71,7 @@ class ReconciliationService:
         sum_candidate = sum(candidate_totals.values())
         sum_device = sum(device_totals.values())
 
-        # Exact match checks (Â§10: zero drift)
+        # Exact match checks (§10: zero drift)
         candidate_match = sum_candidate == total_ballots
         device_match = sum_device == total_ballots
         cross_match = sum_candidate == sum_device

@@ -39,7 +39,7 @@ class VoteService:
         Authorize a new voting session.
 
         Rejects duplicate sessions for the same voter_credential+election
-        (spec Â§12 attack #3).
+        (spec §12 attack #3).
         """
         # Verify election exists and is OPEN
         election = await db.get(Election, election_id)

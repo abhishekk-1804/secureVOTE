@@ -264,7 +264,7 @@ class ResultManifest(Base):
 
     Contains independently verifiable tallies, reconciliation status, and
     audit chain status. The manifest_hash is digitally signed backend-side
-    (per spec Â§9 — Arduino Uno does not perform asymmetric signing).
+    (per spec §9 — Arduino Uno does not perform asymmetric signing).
     """
 
     __tablename__ = "result_manifests"

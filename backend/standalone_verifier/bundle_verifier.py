@@ -68,6 +68,10 @@ class BundleReader:
 
         if self.is_zip:
             self.zf = zipfile.ZipFile(self.bundle_path, "r")
+            names = self.zf.namelist()
+            if len(names) != len(set(names)):
+                self.zf.close()
+                raise ValueError("ZIP bundle contains duplicate member names (archive entry shadowing detected)")
         else:
             self.zf = None
 
@@ -149,14 +153,26 @@ class StandaloneBundleVerifier:
         overall_passed = True
         overall_status = BundleVerificationStatus.VALID.value
 
-        def record(name: str, passed: bool, message: str, details: Optional[dict[str, Any]] = None):
+        def record(
+            name: str,
+            passed: bool,
+            message: str,
+            details: Optional[dict[str, Any]] = None,
+            status: Optional[str] = None,
+        ):
             nonlocal overall_passed, overall_status
-            if not passed:
+            if status is None:
+                status_val = "PASSED" if passed else "FAILED"
+            else:
+                status_val = status
+
+            if status_val == "FAILED":
                 overall_passed = False
                 overall_status = BundleVerificationStatus.INVALID.value
+
             checkpoints.append({
                 "checkpoint": name,
-                "status": "PASSED" if passed else "FAILED",
+                "status": status_val,
                 "message": message,
                 "details": details or {},
             })
@@ -307,8 +323,9 @@ class StandaloneBundleVerifier:
                 record(
                     "checkpoint_4_signature",
                     True,
-                    "No manifest signature present (unsigned bundle mode - NOT_PRESENT)",
+                    "No manifest signature present (unsigned bundle mode - NOT_APPLICABLE)",
                     details={"signature_status": BundleVerificationStatus.NOT_PRESENT.value},
+                    status=BundleVerificationStatus.NOT_APPLICABLE.value,
                 )
 
             # -------------------------------------------------------------
@@ -523,11 +540,12 @@ class StandaloneBundleVerifier:
                         f"Missing required ZK validity proofs in {el_proto} bundle",
                     )
                 else:
-                    zk_status = BundleVerificationStatus.NOT_PRESENT.value
+                    zk_status = BundleVerificationStatus.NOT_APPLICABLE.value
                     record(
                         "checkpoint_9_zk_validity_proofs",
                         True,
-                        "No ZK validity proofs present (v3.0 plaintext ballot mode - NOT_PRESENT)",
+                        "No ZK validity proofs present (v3.0 plaintext ballot mode - NOT_APPLICABLE)",
+                        status=BundleVerificationStatus.NOT_APPLICABLE.value,
                     )
 
             # -------------------------------------------------------------
@@ -636,8 +654,17 @@ class StandaloneBundleVerifier:
                     except Exception:
                         pass
 
-                    if dkg_manifest.threshold != 2 or dkg_manifest.trustee_count != 3 or len(dkg_manifest.qualified_trustees) < 2:
-                        record("checkpoint_12_threshold_manifest", False, f"Invalid threshold manifest parameters: t={dkg_manifest.threshold}, n={dkg_manifest.trustee_count}")
+                    t = dkg_manifest.threshold
+                    n = dkg_manifest.trustee_count
+                    qual = dkg_manifest.qualified_trustees
+                    if t < 1 or n < t:
+                        record("checkpoint_12_threshold_manifest", False, f"Invalid threshold manifest parameters: t={t}, n={n} (requires 1 <= t <= n)")
+                    elif len(qual) < t:
+                        record("checkpoint_12_threshold_manifest", False, f"Insufficient qualified trustees: len(QUAL)={len(qual)} < t={t}")
+                    elif len(qual) != len(set(qual)):
+                        record("checkpoint_12_threshold_manifest", False, f"Duplicate qualified trustees in QUAL: {qual}")
+                    elif any(type(tid) is not int or isinstance(tid, bool) or tid < 1 or tid > n for tid in qual):
+                        record("checkpoint_12_threshold_manifest", False, f"Invalid trustee IDs in QUAL: {qual}")
                     elif dkg_manifest.election_id != election_id:
                         record("checkpoint_12_threshold_manifest", False, f"Manifest election ID mismatch: {dkg_manifest.election_id} != {election_id}")
                     elif not point_on_curve(dkg_manifest.joint_public_key) or dkg_manifest.joint_public_key.is_infinity:
@@ -648,7 +675,7 @@ class StandaloneBundleVerifier:
                         record(
                             "checkpoint_12_threshold_manifest",
                             True,
-                            f"DKG manifest verified: t={dkg_manifest.threshold}, n={dkg_manifest.trustee_count}, QUAL={dkg_manifest.qualified_trustees}",
+                            f"DKG manifest verified: t={t}, n={n}, QUAL={qual}",
                         )
                 except Exception as e:
                     record("checkpoint_12_threshold_manifest", False, f"DKG manifest validation failed: {e}")
@@ -716,35 +743,40 @@ class StandaloneBundleVerifier:
                         record("checkpoint_14_lagrange_combination_and_dlog", False, "Prerequisites missing for Lagrange combination")
                     else:
                         selected = t_result.selected_trustees
-                        if len(selected) != 2 or len(set(selected)) != 2:
-                            record("checkpoint_14_lagrange_combination_and_dlog", False, f"Selected trustees must contain exactly 2 distinct trustees, got {selected}")
+                        t = dkg_manifest.threshold
+                        if not isinstance(selected, list) or len(selected) < t:
+                            record("checkpoint_14_lagrange_combination_and_dlog", False, f"Selected trustees count {len(selected) if isinstance(selected, list) else 0} must be >= threshold {t}")
+                        elif len(selected) != len(set(selected)):
+                            record("checkpoint_14_lagrange_combination_and_dlog", False, f"Selected trustees must be distinct: {selected}")
                         elif any(tid not in dkg_manifest.qualified_trustees for tid in selected):
                             record("checkpoint_14_lagrange_combination_and_dlog", False, f"Selected trustees {selected} must be in QUAL {dkg_manifest.qualified_trustees}")
                         elif any(tid not in trustee_pkgs for tid in selected):
                             record("checkpoint_14_lagrange_combination_and_dlog", False, f"Missing partial decryptions for selected trustees {selected}")
                         else:
-                            # Verify point-level Lagrange combination for each candidate
+                            from app.crypto.elgamal import INFINITY, point_add, scalar_mult, point_negate
+                            from app.crypto.threshold.tally import compute_lagrange_coefficient
+
                             enc_t_obj = enc_tally.get("encrypted_tally", enc_tally) if enc_tally else {}
                             slot_list = enc_t_obj.get("slots", [])
                             candidate_ids = enc_t_obj.get("candidate_ids", [])
 
-                            t_i, t_k = selected[0], selected[1]
-                            l_i = compute_lagrange_coefficient(t_i, selected)
-                            l_k = compute_lagrange_coefficient(t_k, selected)
+                            lambdas = {tid: compute_lagrange_coefficient(tid, selected) for tid in selected}
 
                             lagrange_failures = []
                             for s_idx, cid in enumerate(candidate_ids):
                                 ct = deserialize_ciphertext(slot_list[s_idx])
                                 b_pt = ct.c2
-                                w_i = trustee_pkgs[t_i].shares[cid].partial_decryption
-                                w_k = trustee_pkgs[t_k].shares[cid].partial_decryption
-                                d_j = point_add(scalar_mult(l_i, w_i), scalar_mult(l_k, w_k))
+                                d_j = INFINITY
+                                for tid in selected:
+                                    w_i = trustee_pkgs[tid].shares[cid].partial_decryption
+                                    term = scalar_mult(lambdas[tid], w_i)
+                                    d_j = point_add(d_j, term)
+
                                 declared_d = t_result.combined_decryption_points.get(cid)
                                 if declared_d != d_j:
                                     lagrange_failures.append(f"Combined D_j mismatch for candidate {cid}")
 
                                 # Verify discrete log plaintext recovery: M_j = B_j - D_j == v_j * G
-                                from app.crypto.elgamal import point_negate
                                 votes = t_result.candidate_results.get(cid, 0)
                                 expected_m = scalar_mult(votes, G)
                                 actual_m = point_add(b_pt, point_negate(d_j))
@@ -761,17 +793,20 @@ class StandaloneBundleVerifier:
                 record(
                     "checkpoint_12_threshold_manifest",
                     True,
-                    "No threshold cryptosystem artifacts present (centralized key mode - NOT_PRESENT)",
+                    "No threshold cryptosystem artifacts present (centralized key mode - NOT_APPLICABLE)",
+                    status=BundleVerificationStatus.NOT_APPLICABLE.value,
                 )
                 record(
                     "checkpoint_13_partial_decryption_proofs",
                     True,
-                    "No threshold partial decryptions (centralized key mode - NOT_PRESENT)",
+                    "No threshold partial decryptions (centralized key mode - NOT_APPLICABLE)",
+                    status=BundleVerificationStatus.NOT_APPLICABLE.value,
                 )
                 record(
                     "checkpoint_14_lagrange_combination_and_dlog",
                     True,
-                    "No threshold Lagrange combination (centralized key mode - NOT_PRESENT)",
+                    "No threshold Lagrange combination (centralized key mode - NOT_APPLICABLE)",
+                    status=BundleVerificationStatus.NOT_APPLICABLE.value,
                 )
 
             # -------------------------------------------------------------
@@ -783,39 +818,88 @@ class StandaloneBundleVerifier:
             except Exception:
                 pass
 
+            declared_candidates = candidates_manifest
+
             if dec_tally:
-                tallies = dec_tally.get("candidate_tallies", {})
-                total_votes = sum(tallies.values())
-                declared_ballots = dec_tally.get("total_ballots", 0)
-                if total_votes == declared_ballots and total_votes == ballot_count:
-                    record(
-                        "checkpoint_15_tally_reconciliation",
-                        True,
-                        f"Zero-drift reconciliation verified: {total_votes} votes == {ballot_count} ballots",
-                    )
-                else:
+                tallies = dec_tally.get("candidate_tallies")
+                declared_ballots = dec_tally.get("total_ballots")
+
+                if not isinstance(tallies, dict):
                     record(
                         "checkpoint_15_tally_reconciliation",
                         False,
-                        f"Reconciliation drift: votes={total_votes}, declared={declared_ballots}, ballots={ballot_count}",
+                        "candidate_tallies in decrypted_tally must be a dictionary",
                     )
-            elif has_threshold:
-                # If threshold tally result exists
-                try:
-                    t_res = reader.read_json("threshold/threshold_tally.json")
-                    total_votes = sum(t_res.get("candidate_results", {}).values())
-                    if total_votes == ballot_count and t_res.get("reconciled", False):
+                elif set(tallies.keys()) != set(declared_candidates) or len(tallies) != len(declared_candidates):
+                    missing = set(declared_candidates) - set(tallies.keys())
+                    unknown = set(tallies.keys()) - set(declared_candidates)
+                    record(
+                        "checkpoint_15_tally_reconciliation",
+                        False,
+                        f"Candidate mismatch in decrypted tally: missing={sorted(list(missing))}, unknown={sorted(list(unknown))}",
+                    )
+                elif any(type(v) is not int or isinstance(v, bool) or v < 0 or v > ballot_count for v in tallies.values()):
+                    invalid_tallies = {k: v for k, v in tallies.items() if type(v) is not int or isinstance(v, bool) or v < 0 or v > ballot_count}
+                    record(
+                        "checkpoint_15_tally_reconciliation",
+                        False,
+                        f"Invalid tally values (must be integer in [0, {ballot_count}]): {invalid_tallies}",
+                    )
+                else:
+                    total_votes = sum(tallies.values())
+                    if type(declared_ballots) is int and not isinstance(declared_ballots, bool) and total_votes == declared_ballots and total_votes == ballot_count:
                         record(
                             "checkpoint_15_tally_reconciliation",
                             True,
-                            f"Threshold tally zero-drift reconciliation verified: {total_votes} votes == {ballot_count} ballots",
+                            f"Zero-drift reconciliation verified: {total_votes} votes == {ballot_count} ballots",
                         )
                     else:
                         record(
                             "checkpoint_15_tally_reconciliation",
                             False,
-                            f"Threshold reconciliation drift: votes={total_votes}, ballots={ballot_count}",
+                            f"Reconciliation drift: votes={total_votes}, declared={declared_ballots}, ballots={ballot_count}",
                         )
+            elif has_threshold:
+                # If threshold tally result exists
+                try:
+                    t_res = reader.read_json("threshold/threshold_tally.json")
+                    cand_results = t_res.get("candidate_results")
+                    reconciled = t_res.get("reconciled", False)
+                    if not isinstance(cand_results, dict):
+                        record(
+                            "checkpoint_15_tally_reconciliation",
+                            False,
+                            "candidate_results in threshold_tally must be a dictionary",
+                        )
+                    elif set(cand_results.keys()) != set(declared_candidates) or len(cand_results) != len(declared_candidates):
+                        missing = set(declared_candidates) - set(cand_results.keys())
+                        unknown = set(cand_results.keys()) - set(declared_candidates)
+                        record(
+                            "checkpoint_15_tally_reconciliation",
+                            False,
+                            f"Candidate mismatch in threshold tally: missing={sorted(list(missing))}, unknown={sorted(list(unknown))}",
+                        )
+                    elif any(type(v) is not int or isinstance(v, bool) or v < 0 or v > ballot_count for v in cand_results.values()):
+                        invalid_results = {k: v for k, v in cand_results.items() if type(v) is not int or isinstance(v, bool) or v < 0 or v > ballot_count}
+                        record(
+                            "checkpoint_15_tally_reconciliation",
+                            False,
+                            f"Invalid threshold tally values (must be integer in [0, {ballot_count}]): {invalid_results}",
+                        )
+                    else:
+                        total_votes = sum(cand_results.values())
+                        if total_votes == ballot_count and reconciled:
+                            record(
+                                "checkpoint_15_tally_reconciliation",
+                                True,
+                                f"Threshold tally zero-drift reconciliation verified: {total_votes} votes == {ballot_count} ballots",
+                            )
+                        else:
+                            record(
+                                "checkpoint_15_tally_reconciliation",
+                                False,
+                                f"Threshold reconciliation drift: votes={total_votes}, ballots={ballot_count}, reconciled={reconciled}",
+                            )
                 except Exception as e:
                     record(
                         "checkpoint_15_tally_reconciliation",
@@ -826,7 +910,8 @@ class StandaloneBundleVerifier:
                 record(
                     "checkpoint_15_tally_reconciliation",
                     True,
-                    "No decrypted tally provided; encrypted homomorphic aggregation stage verified",
+                    "No decrypted tally provided; encrypted homomorphic aggregation stage verified (tally reconciliation - NOT_APPLICABLE)",
+                    status=BundleVerificationStatus.NOT_APPLICABLE.value,
                 )
 
         finally:
@@ -846,6 +931,7 @@ class StandaloneBundleVerifier:
             "checkpoints_total": len(checkpoints),
             "checkpoints_passed": sum(1 for c in checkpoints if c["status"] == "PASSED"),
             "checkpoints_failed": sum(1 for c in checkpoints if c["status"] == "FAILED"),
+            "checkpoints_not_applicable": sum(1 for c in checkpoints if c["status"] == "NOT_APPLICABLE"),
             "artifact_checks": {
                 "schema_valid": c_map.get("checkpoint_1_bundle_schema", False),
                 "manifest_hash_valid": c_map.get("checkpoint_2_manifest_hash", False),

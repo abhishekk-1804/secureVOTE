@@ -215,7 +215,7 @@ class DeviceService:
         Validate that a device can accept votes.
 
         The device must exist, belong to the election, and be ACTIVE.
-        Unknown or revoked devices are rejected per spec Â§12 attack #8.
+        Unknown or revoked devices are rejected per spec §12 attack #8.
         """
         result = await db.execute(
             select(Device).where(

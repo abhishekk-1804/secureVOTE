@@ -268,11 +268,12 @@ def test_happy_path_directory_bundle(standard_v3_package, ed25519_keypair, tmp_p
 
     assert report["verified"] is True
     assert report["overall_status"] == BundleVerificationStatus.VALID.value
-    assert report["checkpoints_passed"] == 15
+    assert report["checkpoints_passed"] == 12
+    assert report["checkpoints_not_applicable"] == 3
     assert report["checkpoints_failed"] == 0
 
     for cp in report["checkpoints"]:
-        assert cp["status"] == "PASSED", f"Checkpoint {cp['checkpoint']} failed: {cp['message']}"
+        assert cp["status"] in ("PASSED", "NOT_APPLICABLE"), f"Checkpoint {cp['checkpoint']} failed: {cp['message']}"
 
 
 def test_happy_path_zip_bundle(standard_v3_package, ed25519_keypair, tmp_path):
@@ -296,7 +297,8 @@ def test_happy_path_zip_bundle(standard_v3_package, ed25519_keypair, tmp_path):
     )
 
     assert report["verified"] is True
-    assert report["checkpoints_passed"] == 15
+    assert report["checkpoints_passed"] == 12
+    assert report["checkpoints_not_applicable"] == 3
     assert report["checkpoints_failed"] == 0
     assert report["overall_status"] == BundleVerificationStatus.VALID.value
 
@@ -317,8 +319,8 @@ def test_happy_path_unsigned_bundle(standard_v3_package, tmp_path):
 
     assert report["verified"] is True
     cp4 = next(c for c in report["checkpoints"] if c["checkpoint"] == "checkpoint_4_signature")
-    assert cp4["status"] == "PASSED"
-    assert "NOT_PRESENT" in cp4["message"]
+    assert cp4["status"] == "NOT_APPLICABLE"
+    assert "NOT_APPLICABLE" in cp4["message"]
     assert report["signature_status"] == BundleVerificationStatus.NOT_PRESENT.value
 
 

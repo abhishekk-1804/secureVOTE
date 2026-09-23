@@ -346,6 +346,10 @@ export default function IndependentVerificationPage() {
                           ? "success"
                           : cp.status === "FAILED"
                           ? "danger"
+                          : cp.status === "SERVER_ASSERTED"
+                          ? "info"
+                          : cp.status === "NOT_APPLICABLE"
+                          ? "neutral"
                           : "warning"
                       }
                     >
@@ -366,6 +370,12 @@ export default function IndependentVerificationPage() {
                   )}
                   {cp.status === "FAILED" && (
                     <XCircle className="w-5 h-5 text-rose-500" />
+                  )}
+                  {cp.status === "SERVER_ASSERTED" && (
+                    <Info className="w-5 h-5 text-blue-500" />
+                  )}
+                  {cp.status === "NOT_APPLICABLE" && (
+                    <Info className="w-5 h-5 text-slate-400" />
                   )}
                   {(cp.status === "UNCHECKED" || (cp.status as any) === "PENDING") && (
                     <AlertTriangle className="w-5 h-5 text-amber-500" />

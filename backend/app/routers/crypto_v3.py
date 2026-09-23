@@ -3,6 +3,7 @@ FastAPI Router for SecureVOTE 3.0 Cryptographic Research API.
 """
 
 import json
+import os
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession

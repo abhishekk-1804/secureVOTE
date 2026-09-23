@@ -3,7 +3,7 @@ Independent verification engine for SecureVOTE.
 
 The verifier independently recomputes tallies, hashes, and reconciliation
 from raw ballot/audit records — it never reads a precomputed "VERIFIED"
-flag and passes it through (spec Â§4 trust boundary rule).
+flag and passes it through (spec §4 trust boundary rule).
 
 Generates and optionally signs result manifests.
 """

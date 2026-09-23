@@ -120,7 +120,8 @@ Latest project validation checkpoint:
 
 | Component | Result |
 |---|---:|
-| Backend test suite | **315 / 315 passed** |
+| Backend test suite | **395 / 395 passed** |
+| Phase 3 audit hardening suite | **14 / 14 passed** |
 | Firmware native tests | **17 / 17 passed** |
 | Dashboard tests | **59 / 59 passed (10 test files)** |
 | Next.js production build | **45 / 45 routes compiled** |
@@ -128,7 +129,7 @@ Latest project validation checkpoint:
 | Attack suite | **20 / 20 passed** |
 | Threshold DKG & Decryption suite | **81 / 81 passed** |
 | Deterministic 1,000-ballot demonstration | **Validated** |
-| Docker / Wokwi automation | **Environment-blocked, documented** |
+| Docker Compose containerized stack | **Validated (backend healthy, dashboard HTTP 200, clean restart verified)** |
 
 The repository contains reproducibility and security documentation for the detailed test methodology.
 

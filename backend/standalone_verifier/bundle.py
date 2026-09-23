@@ -47,6 +47,8 @@ class BundleVerificationStatus(str, Enum):
     NOT_PRESENT = "NOT_PRESENT"
     UNSUPPORTED = "UNSUPPORTED"
     MALFORMED = "MALFORMED"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    SERVER_ASSERTED = "SERVER_ASSERTED"
 
 
 @dataclass(frozen=True)

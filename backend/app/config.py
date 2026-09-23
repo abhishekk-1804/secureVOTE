@@ -18,6 +18,12 @@ class Settings(BaseSettings):
         description="Database connection URL. Use postgresql+asyncpg:// for PostgreSQL.",
     )
 
+    # CORS
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000,https://secure-vote-eta.vercel.app",
+        description="Comma-separated allowed CORS origins.",
+    )
+
     # JWT Authentication
     jwt_secret_key: str = Field(
         default="dev-secret-change-me-in-production",
@@ -26,7 +32,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60
 
-    # Signing key for election manifests (backend-only per spec Â§9)
+    # Signing key for election manifests (backend-only per spec §9)
     signing_key_path: str = Field(
         default="./signing_key.pem",
         description="Path to PEM-encoded signing key for election manifests.",
